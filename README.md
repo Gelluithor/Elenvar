@@ -1,153 +1,216 @@
 <p align="center">
-  <img src="frontend/public/logo.svg" width="96" height="96" alt="">
+  <img src="frontend/public/logo-dark.svg" width="96" height="96" alt="">
 </p>
 
 <h1 align="center">Elenvar</h1>
 
-<p align="center">Centrální správa a monitoring kamerových systémů Hikvision v Dockeru.</p>
+<p align="center">Self-hosted central management and monitoring for Hikvision camera systems, running in Docker.</p>
 
 ---
 
-## Co umí
+## Features
 
-- **Živý obraz z více NVR najednou** – mřížka 1 / 4 / 9 / 16 kamer, přetahování kamer, celá obrazovka, automatická volba kvality (substream v mřížce, hlavní stream při zvětšení).
-- **Záznamy** – vyhledání záznamů na NVR, časová osa dne (průběžný záznam / události), přehrávání od libovolného času, posun ±30 s, stahování úseků.
-- **Monitoring** – pravidelná kontrola dostupnosti NVR, stavu každé kamery, disků (HDD/NAS) a odchylky času. Kamery lze označit jako *sledované*; při výpadku vznikne událost a odejde upozornění (e-mail, webhook). Ochrana před planými poplachy (počet selhání před upozorněním).
-- **Nastavení zařízení** – parametry streamů kamer (kodek, rozlišení, snímková frekvence, datový tok, GOP) podle schopností kamery, restart NVR.
-- **Zabezpečení** – povinné dvoufázové ověření (TOTP) se záložními kódy, role, audit všech důležitých akcí.
+- **Live view from multiple NVRs at once**: 1 / 4 / 9 / 16 tile layouts, drag and drop, full screen, and automatic quality selection (substream in the grid, main stream when enlarged).
+- **Recordings**: search recordings on the NVR, browse a day timeline (continuous recording vs. events), play from any point, skip ±30 s and download segments.
+- **Monitoring**: periodic checks of NVR availability, camera status, disks (HDD/NAS) and clock drift.
+  - Mark the cameras that must stay online. Elenvar logs an event and sends a notification (e-mail, webhook) when they go down and when they come back.
+  - A configurable failure threshold prevents false alarms.
+- **Device settings**: change camera stream parameters (codec, resolution, frame rate, bitrate, GOP) within the camera's capabilities, and restart devices remotely.
+- **Security**:
+  - Mandatory two-factor authentication (TOTP) with recovery codes.
+  - Roles and a full audit log.
+- **Updates from the web interface**: Elenvar watches for new releases and installs them after the administrator confirms.
+- **Czech and English**: the interface follows the browser language and can be switched at any time.
 
-Podporovaná zařízení: Hikvision NVR (primárně), DVR a samostatné IP kamery s rozhraním ISAPI.
+Supported devices: Hikvision NVRs (primary target), DVRs and standalone IP cameras with the ISAPI interface.
 
-## Architektura
+## Architecture
 
 ```
-prohlížeč ──HTTPS──▶ Caddy ──▶ app (FastAPI + React UI) ──ISAPI (HTTP/Digest)──▶ NVR
-                                   │
-                                   └─WebSocket─▶ go2rtc ──RTSP──▶ NVR
+browser ──HTTPS──▶ Caddy ──▶ app (FastAPI + React UI) ──ISAPI (HTTP/Digest)──▶ NVR
+                               │
+                               └─WebSocket─▶ go2rtc ──RTSP──▶ NVR
+
+               updater ──Docker API──▶ restarts "app" with a newer image (on request)
 ```
 
-| Služba   | Úloha |
-|----------|-------|
-| `caddy`  | Jediná služba vystavená ven. HTTPS (interní CA nebo Let's Encrypt), přesměrování HTTP → HTTPS. |
-| `app`    | API, webové rozhraní, autentizace, monitoring na pozadí, proxy videa. Data v SQLite ve svazku `elenvar-data`. |
-| `go2rtc` | Interní převod RTSP z NVR na MSE (fMP4) pro prohlížeč. Není dostupný mimo Docker síť, přihlašovací údaje ke kamerám drží jen v paměti (tmpfs). |
+| Service   | Role |
+|-----------|------|
+| `caddy`   | The only service exposed to the network. HTTPS (internal CA or Let's Encrypt) and HTTP → HTTPS redirect. |
+| `app`     | API, web interface, authentication, background monitoring and video proxy. Data is stored in SQLite in the `elenvar-data` volume. |
+| `go2rtc`  | Internal RTSP → MSE (fMP4) conversion for the browser. It is not reachable outside the Docker network and keeps camera credentials in memory only (tmpfs). |
+| `updater` | The only service with access to Docker. It can do exactly one thing: pull a newer `app` image and restart the `app` container. Internal network only, protected by a shared token. |
 
-Video jde vždy přes aplikaci – prohlížeč se nikdy nepřipojuje přímo k NVR ani ke go2rtc a každé spojení se ověřuje přihlášením a rolí.
+Video always goes through the application. The browser never connects to an NVR or to go2rtc directly, and every stream is checked against the user's session and role.
 
-## Instalace
+## Installation
 
-Požadavky: Docker s Compose v2 a síťová dostupnost NVR (HTTP port ISAPI a RTSP port) ze serveru.
+Requirements: Docker with Compose v2. The server must be able to reach the NVRs on their HTTP (ISAPI) and RTSP ports.
 
 ```bash
-git clone <repozitář> elenvar && cd elenvar
+git clone https://github.com/Gelluithor/Elenvar.git && cd Elenvar
 cp .env.example .env
-# upravte ELENVAR_DOMAIN (adresa, pod kterou budete Elenvar otevírat)
+# set ELENVAR_DOMAIN (the address you will open Elenvar on)
 docker compose up -d --build
-docker compose logs app | grep -A3 "Vytvořen účet"   # heslo administrátora
+docker compose logs app | grep -A3 "Administrator account"   # initial admin password
 ```
 
-Otevřete `https://<ELENVAR_DOMAIN>`, přihlaste se jako `admin`, nastavte si dvoufázové ověření a změňte heslo.
+Open `https://<ELENVAR_DOMAIN>`, sign in as `admin`, set up two-factor authentication and change the password.
+
+Released images are also published to the GitHub Container Registry, so `docker compose pull && docker compose up -d` works without building locally.
 
 ### HTTPS
 
-- **Interní síť** (`ELENVAR_TLS=internal`): Caddy vystaví certifikát vlastní certifikační autoritou. Prohlížeč ji napoprvé označí jako nedůvěryhodnou. Pro odstranění varování naimportujte kořenový certifikát do počítačů:
+- **Local network** (`ELENVAR_TLS=internal`): Caddy issues a certificate from its own certificate authority, so browsers warn about it at first. To remove the warning, import the root certificate on your computers:
   `docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt ./elenvar-root.crt`
-- **Veřejná doména** (`ELENVAR_TLS=vas@email.cz`): Caddy získá certifikát Let's Encrypt automaticky (porty 80 a 443 musí být dostupné z internetu).
-- `ELENVAR_DOMAIN` může obsahovat více adres oddělených čárkou, např. `elenvar.firma.lan, 192.168.1.20`.
+- **Public domain** (`ELENVAR_TLS=you@example.com`): Caddy obtains a Let's Encrypt certificate automatically. Ports 80 and 443 must be reachable from the internet.
+- `ELENVAR_DOMAIN` may list several addresses separated by commas, e.g. `elenvar.example.lan, 192.168.1.20`.
 
-### Konfigurace (`.env`)
+### Configuration (`.env`)
 
-| Proměnná | Výchozí | Popis |
-|----------|---------|-------|
-| `ELENVAR_DOMAIN` | `localhost` | Adresa(y) webu. |
-| `ELENVAR_TLS` | `internal` | `internal` nebo e-mail pro Let's Encrypt. |
-| `ELENVAR_HTTP_PORT` / `ELENVAR_HTTPS_PORT` | `80` / `443` | Porty na hostiteli. |
-| `ELENVAR_ADMIN_USERNAME` | `admin` | Jméno prvního administrátora (jen při prvním startu). |
-| `ELENVAR_ADMIN_PASSWORD` | *(vygeneruje se)* | Heslo prvního administrátora. |
-| `ELENVAR_SESSION_IDLE_MINUTES` | `60` | Odhlášení po nečinnosti (sledování videa se počítá jako aktivita). |
-| `ELENVAR_SESSION_MAX_HOURS` | `12` | Maximální délka přihlášení. |
-| `ELENVAR_SECRET_KEY` | *(vygeneruje se do svazku)* | Klíč pro šifrování hesel k NVR a SMTP. |
-| `ELENVAR_PLAYBACK_SOURCE` | `rtsp` | `ffmpeg` pro firmwary, kde přímé přehrávání záznamu nefunguje. |
-| `TZ` | `Europe/Prague` | Časová zóna serveru. |
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ELENVAR_DOMAIN` | `localhost` | Address(es) of the web interface. |
+| `ELENVAR_TLS` | `internal` | `internal`, or an e-mail address for Let's Encrypt. |
+| `ELENVAR_HTTP_PORT` / `ELENVAR_HTTPS_PORT` | `80` / `443` | Ports on the host. |
+| `ELENVAR_ADMIN_USERNAME` | `admin` | Name of the first administrator (first start only). |
+| `ELENVAR_ADMIN_PASSWORD` | *(generated)* | Password of the first administrator. If empty, it is generated and printed to the log. |
+| `ELENVAR_SESSION_IDLE_MINUTES` | `60` | Sign-out after inactivity (watching video counts as activity). |
+| `ELENVAR_SESSION_MAX_HOURS` | `12` | Maximum session length. |
+| `ELENVAR_SECRET_KEY` | *(generated into the volume)* | Key used to encrypt NVR and SMTP passwords. |
+| `ELENVAR_PLAYBACK_SOURCE` | `rtsp` | Set to `ffmpeg` for firmware where direct playback does not work. |
+| `ELENVAR_IMAGE`, `ELENVAR_UPDATER_IMAGE`, `ELENVAR_IMAGE_TAG` | `ghcr.io/gelluithor/…`, `latest` | Where updates are pulled from. |
+| `ELENVAR_UPDATE_REPO` | `Gelluithor/Elenvar` | GitHub repository that is checked for new releases. |
+| `TZ` | `Europe/Prague` | Server time zone. |
 
-Ostatní nastavení (interval kontroly, upozornění, vynucení 2FA, retence) se mění ve webu v sekci **Nastavení**.
+Everything else is changed in the web interface under **Settings**:
+- check interval and failure threshold;
+- notifications and their language;
+- enforcing 2FA;
+- data retention;
+- update checks.
 
-## Příprava NVR Hikvision
+## Preparing a Hikvision NVR
 
-1. **Povolte ISAPI** – u novějších firmwarů *Konfigurace → Síť → Rozšířené → Integrační protokol → Povolit Hikvision-CGI / ISAPI*.
-2. **Vytvořte samostatného uživatele** pro Elenvar (doporučeno). Oprávnění: vzdálený živý náhled a přehrávání; pro úpravu streamů a restart navíc nastavení parametrů a restart.
-3. **Autentizace** – výchozí *digest* je v pořádku (Elenvar umí digest i basic).
-4. **Kodek substreamu** – prohlížeče spolehlivě přehrávají **H.264**. H.265 umí Chrome/Edge/Safari jen s hardwarovou podporou, Firefox vůbec. Doporučujeme nastavit substream na H.264 (lze přímo v Elenvar: *Zařízení → NVR → Stream*). Alternativně zapněte u zařízení *Převádět video na H.264* (zatěžuje CPU serveru).
-5. Ze serveru musí být dostupné porty HTTP (80/443) a RTSP (554) NVR.
+1. **Enable ISAPI.** On newer firmware: *Configuration → Network → Advanced → Integration Protocol → Enable Hikvision-CGI / ISAPI*.
+2. **Create a dedicated user** for Elenvar (recommended).
+   - It needs remote live view and playback permissions.
+   - To change streams and restart the device, it also needs parameter configuration and reboot permissions.
+3. **Authentication.** The default *digest* mode is fine; Elenvar supports both digest and basic.
+4. **Substream codec.** Browsers reliably play **H.264**.
+   - H.265 works in Chrome, Edge and Safari only with hardware support, and not at all in Firefox.
+   - Set the substream to H.264. You can do it directly in Elenvar: *Devices → device → Stream*.
+   - Alternatively, enable *Convert video to H.264* for the device (uses server CPU).
+5. The server must reach the NVR's HTTP (80/443) and RTSP (554) ports.
 
-> Elenvar při chybném hesle k NVR automaticky přestane zařízení dotazovat, aby Hikvision nezablokoval účet ani IP adresu serveru. Po opravě údajů se kontrola obnoví.
+> If the NVR password is wrong, Elenvar stops polling the device so that Hikvision does not lock the account or the server's IP address. Polling resumes once the credentials are fixed.
 
-## Role
+## Roles
 
-| Role | Oprávnění |
-|------|-----------|
-| Pozorovatel | Přehled, živý obraz, stav monitoringu a události. |
-| Operátor | Navíc přehrávání a stahování záznamů, potvrzování událostí. |
-| Administrátor | Vše včetně správy zařízení, uživatelů, nastavení a auditu. |
+| Role | Permissions |
+|------|-------------|
+| Viewer | Overview, live view, monitoring status and events. |
+| Operator | Additionally: playing and downloading recordings, acknowledging events. |
+| Administrator | Everything, including devices, users, settings and the audit log. |
 
-## Zabezpečení
+## Security
 
-- Hesla uživatelů: **Argon2id**, minimální délka 12 znaků.
-- **Dvoufázové ověření TOTP** (standardně povinné) s ochranou proti opakovanému použití kódu a 10 jednorázovými záložními kódy (uložené jako hash).
-- Relace na straně serveru, cookie `__Host-` s `HttpOnly`, `Secure`, `SameSite=Strict`; nový token po přihlášení (ochrana proti fixaci relace), časový limit nečinnosti i maximální délky.
-- **CSRF** token pro každou měnící operaci a kontrola `Origin` (i u WebSocketů).
-- Omezení pokusů o přihlášení (IP i účet), dočasné zablokování účtu po 5 chybách.
-- Hesla k NVR a SMTP šifrovaná (Fernet/AES), nikdy se neposílají do prohlížeče; pozorovatelé a operátoři nevidí ani adresy zařízení.
-- Přísné bezpečnostní hlavičky (CSP bez inline skriptů, HSTS, `X-Frame-Options`, `nosniff`, …).
-- Aplikace běží pod neprivilegovaným uživatelem; všechny kontejnery mají zahozené capabilities a `no-new-privileges`, aplikace a go2rtc navíc read-only souborový systém.
-- Auditní záznam přihlášení, změn nastavení, přehrávání a stahování záznamů.
+- **Passwords:** hashed with **Argon2id**, minimum length 12 characters.
+- **Two-factor authentication (TOTP):** required by default. Codes can't be reused, and there are 10 one-time recovery codes, stored as hashes.
+- **Sessions:**
+  - Stored on the server, with an `__Host-` cookie that is `HttpOnly`, `Secure` and `SameSite=Strict`.
+  - A new token is issued after sign-in, which prevents session fixation.
+  - Sessions have both an idle timeout and a maximum lifetime.
+- **CSRF protection:** a token for every state-changing request, plus an `Origin` check, also on WebSockets.
+- **Sign-in rate limiting:** limits per IP and per account; an account is temporarily locked after 5 failed attempts.
+- **Stored credentials:** NVR and SMTP passwords are encrypted (Fernet/AES) and never sent to the browser. Viewers and operators don't even see device addresses.
+- **Security headers:** strict HTTP headers, including a CSP without inline scripts, HSTS, `X-Frame-Options` and `nosniff`.
+- **Containers:**
+  - The application runs as an unprivileged user.
+  - All containers drop capabilities and use `no-new-privileges`.
+  - The app and go2rtc also use read-only file systems.
+- **Audit log:** covers sign-ins, settings changes, playback, downloads and updates.
 
-Doporučení: Elenvar nevystavujte do internetu bez nutnosti – ideálně jen v interní síti nebo přes VPN.
+Recommendation: don't expose Elenvar to the internet unless you have to. Keep it on the local network or behind a VPN.
 
-## Zálohování a aktualizace
+## Updates
 
-Všechna data (databáze a šifrovací klíč `secret.key`) jsou ve svazku `elenvar-data`. **Klíč zálohujte spolu s databází** – bez něj nelze dešifrovat uložená hesla k NVR.
+Elenvar checks GitHub for a new release every 6 hours, and you can also check manually. When a new version is out:
+- an event appears in Monitoring;
+- a notification is sent;
+- a dot appears next to **Settings**.
+
+Install it under *Settings → Software update → Update now*. Elenvar asks for your password, pulls the new image, restarts and reloads the page.
+
+- Updating from the web replaces the application image only. If a release changes `docker-compose.yml` (for example a new go2rtc version), update the compose file on the server once (`git pull && docker compose up -d`).
+- If you don't want updates from the web, remove the `updater` service from `docker-compose.yml`.
+
+### Publishing a release
+
+1. Bump the version in `VERSION`, update `CHANGELOG.md` and commit.
+2. Create a GitHub release with the tag `v<version>` (e.g. `v1.1.0`).
+3. The *Release* workflow builds multi-architecture images (amd64, arm64) and pushes them to `ghcr.io`.
+
+GHCR packages are private by default. Make them public, or run `docker login ghcr.io` on the server once.
+
+## Backup
+
+All data lives in the `elenvar-data` volume: the database and the encryption key `secret.key`.
+
+**Back up the key together with the database.** Without it, the stored NVR passwords cannot be decrypted.
 
 ```bash
-# záloha
 docker run --rm -v elenvar_elenvar-data:/data -v "$PWD":/backup alpine tar czf /backup/elenvar-backup.tgz -C /data .
-# aktualizace
-git pull && docker compose up -d --build
 ```
 
-Ztracený přístup administrátora (telefon s 2FA): jiný administrátor může v sekci **Uživatelé** resetovat 2FA. Pokud žádný není, lze se přihlásit záložním kódem.
+If an administrator loses access to their 2FA device, another administrator can reset their 2FA under **Users**. If there is no other administrator, sign in with a recovery code.
 
-## Poznámky a omezení
+## Notes and limitations
 
-- Časy záznamů se zobrazují v čase NVR (tak, jak je zařízení vrací), proto mějte čas na NVR nastavený přes NTP – Elenvar hlídá jeho odchylku.
-- Zvuk se v prohlížeči nepřehrává (kamery obvykle používají G.711, které prohlížeče nepodporují).
-- Stažené záznamy jsou v nativním formátu Hikvision (přehraje je např. VLC).
-- Přehrávání záznamu běží v reálném čase (bez zrychlení).
-- U analogových kanálů DVR se stav kamer nedá přes ISAPI spolehlivě zjistit – sleduje se jen dostupnost zařízení a disky.
+- Recording times are shown in the NVR's time, as the device reports them. Keep the NVR clock synchronised via NTP; Elenvar monitors its drift.
+- Audio is not played in the browser, because cameras usually use G.711, which browsers do not support.
+- Downloaded recordings are in Hikvision's native format. VLC, for example, can play them.
+- Playback runs in real time (no fast-forward).
+- For analog DVR channels, camera status can't be reliably detected over ISAPI. Only device availability and disks are monitored.
 
 ## Demo
 
-Vyzkoušení bez skutečného NVR – dvě simulovaná NVR s osmi kamerami a ukázkovými daty:
+Try Elenvar without real hardware: two simulated NVRs with eight cameras and sample data.
 
 ```bash
-dev/demo.sh        # spustí demo na http://localhost:8080 (přihlášení: admin / Elenvar-Demo-2026)
-dev/demo.sh down   # zastaví demo a smaže jeho data
+dev/demo.sh        # starts the demo on http://localhost:8080 (sign in: admin / Elenvar-Demo-2026)
+dev/demo.sh down   # stops the demo and deletes its data
 ```
 
-Demo běží odděleně od ostré instalace, jen na tomto počítači a bez povinného 2FA.
+The demo runs separately from a production installation, only on the local machine, and without mandatory 2FA.
 
-## Vývoj
+## Development
 
-Součástí je simulátor Hikvision NVR (ISAPI s digest autentizací + RTSP s testovacím obrazem):
+The repository contains a Hikvision NVR simulator: ISAPI with digest authentication, and RTSP with a camera-like picture and on-screen display.
 
 ```bash
 docker compose -f docker-compose.yml -f dev/docker-compose.dev.yml up -d --build
 ```
 
-V aplikaci přidejte zařízení s adresou `mock-nvr`, uživatelem `admin` a heslem `p@ss:w/rd`. Stav simulátoru lze měnit z kontejneru aplikace, např. `http://mock-nvr/mock/set?offline=1,3&hdd=error`.
+In the app, add a device with the address `mock-nvr`, user `admin` and password `p@ss:w/rd`. The simulator state can be changed from the app container, e.g. `http://mock-nvr/mock/set?offline=1,3&hdd=error`.
 
-Frontend: React + TypeScript + Vite (`frontend/`), backend: Python FastAPI (`backend/`).
+- Frontend: React + TypeScript + Vite (`frontend/`).
+- Backend: Python FastAPI (`backend/`).
+- Updater: `updater/`.
 
-## Licence
+### Translations
 
-GPL-3.0 – viz [LICENSE](LICENSE).
+Czech is the source language in the code. English translations live in:
+- `frontend/src/lib/i18n-en.ts` for the interface;
+- `backend/app/i18n.py` for server messages.
+
+Two checks make sure nothing is left untranslated:
+
+```bash
+node tools/check_frontend_i18n.mjs                  # needs frontend/node_modules
+cd backend && python ../tools/check_backend_i18n.py
+```
+
+## License
+
+GPL-3.0, see [LICENSE](LICENSE).

@@ -1,3 +1,4 @@
+import { getLang, t } from "./i18n";
 /**
  * Přehrávač MSE streamu z go2rtc (přes WebSocket proxy aplikace).
  *
@@ -30,34 +31,34 @@ function mediaSourceCtor(): { ctor: MediaSourceCtor; managed: boolean } | null {
 export function translateStreamError(raw: string): string {
   const text = raw.toLowerCase();
   if (text.includes("codecs not matched") || text.includes("codecs not match")) {
-    return "Prohlížeč nepodporuje kodek kamery (pravděpodobně H.265). Nastavte stream na H.264 nebo zapněte převod na H.264 u zařízení.";
+    return t("Prohlížeč nepodporuje kodek kamery (pravděpodobně H.265). Nastavte stream na H.264 nebo zapněte převod na H.264 u zařízení.");
   }
   if (text.includes("401") || text.includes("unauthorized")) {
-    return "Zařízení odmítlo přihlášení k videu (RTSP).";
+    return t("Zařízení odmítlo přihlášení k videu (RTSP).");
   }
   if (text.includes("timeout") || text.includes("i/o timeout")) {
-    return "Zařízení neodpovídá (vypršel časový limit).";
+    return t("Zařízení neodpovídá (vypršel časový limit).");
   }
   if (text.includes("connection refused") || text.includes("no route") || text.includes("unreachable")) {
-    return "Zařízení není dosažitelné (RTSP).";
+    return t("Zařízení není dosažitelné (RTSP).");
   }
   if (text.includes("404") || text.includes("not found") || text.includes("wrong response")) {
-    return "Stream není k dispozici (kamera offline nebo neexistující kanál).";
+    return t("Stream není k dispozici (kamera offline nebo neexistující kanál).");
   }
-  return `Video nelze přehrát: ${raw}`;
+  return t("Video nelze přehrát: {raw}", { raw: raw });
 }
 
 function closeReason(code: number): string | null {
   switch (code) {
     case 4401:
-      return "Nejste přihlášeni nebo nemáte oprávnění.";
+      return t("Nejste přihlášeni nebo nemáte oprávnění.");
     case 4404:
-      return "Kamera neexistuje nebo je zařízení vypnuté.";
+      return t("Kamera neexistuje nebo je zařízení vypnuté.");
     case 4400:
     case 1008:
-      return "Neplatný požadavek na stream.";
+      return t("Neplatný požadavek na stream.");
     case 1011:
-      return "Video služba není dostupná.";
+      return t("Video služba není dostupná.");
     default:
       return null;
   }
@@ -84,7 +85,7 @@ export class MsePlayer {
   start(): void {
     const found = mediaSourceCtor();
     if (!found) {
-      this.fail("Tento prohlížeč nepodporuje přehrávání videa (Media Source Extensions).");
+      this.fail(t("Tento prohlížeč nepodporuje přehrávání videa (Media Source Extensions)."));
       return;
     }
     this.setStatus("connecting");
@@ -158,13 +159,15 @@ export class MsePlayer {
       this.objectUrl = null;
     }
     const scheme = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const ws = new WebSocket(`${scheme}//${window.location.host}${this.path}`);
+    // Jazyk pro chybové hlášky serveru (WebSocket neumí vlastní hlavičky).
+    const separator = this.path.includes("?") ? "&" : "?";
+    const ws = new WebSocket(`${scheme}//${window.location.host}${this.path}${separator}lang=${getLang()}`);
     ws.binaryType = "arraybuffer";
     this.ws = ws;
     ws.onopen = () => {
       const codecs = this.supportedCodecs();
       if (!codecs) {
-        this.fail("Tento prohlížeč neumí přehrát video H.264 ani H.265. Použijte Chrome, Edge, Safari nebo Firefox.");
+        this.fail(t("Tento prohlížeč neumí přehrát video H.264 ani H.265. Použijte Chrome, Edge, Safari nebo Firefox."));
         return;
       }
       ws.send(JSON.stringify({ type: "mse", value: codecs }));
@@ -177,7 +180,7 @@ export class MsePlayer {
       if (this.destroyed || this.failed) return;
       const reason = closeReason(event.code);
       if (reason) this.fail(reason);
-      else this.setStatus("ended", this.live ? "Spojení se streamem bylo ukončeno." : "Přehrávání skončilo.");
+      else this.setStatus("ended", this.live ? t("Spojení se streamem bylo ukončeno.") : t("Přehrávání skončilo."));
     };
   };
 
@@ -210,7 +213,7 @@ export class MsePlayer {
       buffer.addEventListener("updateend", this.onUpdateEnd);
       this.sourceBuffer = buffer;
     } catch {
-      this.fail(`Prohlížeč nepodporuje formát videa (${mime}).`);
+      this.fail(t("Prohlížeč nepodporuje formát videa ({mime}).", { mime: mime }));
     }
   }
 
@@ -221,7 +224,7 @@ export class MsePlayer {
       this.queue.push(data);
       this.queueBytes += data.byteLength;
       if (this.queueBytes > MAX_QUEUE_BYTES) {
-        this.fail("Video nestíhá – příliš pomalé zpracování nebo připojení.");
+        this.fail(t("Video nestíhá – příliš pomalé zpracování nebo připojení."));
       }
       return;
     }
@@ -240,7 +243,7 @@ export class MsePlayer {
         this.trim(true);
         return;
       }
-      this.fail("Chyba dekódování videa.");
+      this.fail(t("Chyba dekódování videa."));
     }
   }
 

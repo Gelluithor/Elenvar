@@ -74,7 +74,7 @@ async def ensure_stream(name: str, source: str) -> None:
         except httpx.HTTPError as exc:
             raise Go2rtcError("Služba pro video (go2rtc) není dostupná.") from exc
         if resp.status_code >= 400:
-            log.error("go2rtc odmítl stream %s: HTTP %s %s", name, resp.status_code, resp.text[:200])
+            log.error("go2rtc rejected stream %s: HTTP %s %s", name, resp.status_code, resp.text[:200])
             raise Go2rtcError("Nepodařilo se připravit video stream.")
 
 
@@ -82,7 +82,7 @@ async def delete_stream(name: str) -> None:
     try:
         await _http().delete("/api/streams", params={"src": name})
     except httpx.HTTPError as exc:
-        log.warning("Nelze odstranit stream %s z go2rtc: %s", name, exc)
+        log.warning("Cannot remove stream %s from go2rtc: %s", name, exc)
 
 
 async def delete_streams_with_prefix(prefix: str) -> None:

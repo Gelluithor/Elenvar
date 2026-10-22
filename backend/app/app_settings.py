@@ -28,6 +28,8 @@ DEFAULTS: dict[str, Any] = {
     "webhook_enabled": False,
     "webhook_url": "",
     "notify_recoveries": True,
+    # jazyk e-mailů a webhooků
+    "language": "cs",
     "update_check_enabled": True,
     "update_include_prereleases": False,
     # interní stav kontroly aktualizací (nezobrazuje se v nastavení)

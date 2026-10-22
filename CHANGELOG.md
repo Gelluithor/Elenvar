@@ -2,6 +2,19 @@
 
 Všechny podstatné změny projektu Elenvar. Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), verze se řídí [sémantickým verzováním](https://semver.org/lang/cs/).
 
+## [1.1.0] – 2026-10-23
+
+### Přidáno
+- Angličtina: celé rozhraní, chybové hlášky serveru, události monitoringu, stavy zařízení i auditní záznam jsou dostupné česky i anglicky.
+- Přepínač jazyka v postranním panelu a na přihlašovací obrazovce; výchozí jazyk podle prohlížeče.
+- Volba jazyka upozornění (e-mail, webhook) v Nastavení.
+- Kontroly úplnosti překladu pro frontend i backend (`tools/`).
+
+### Změněno
+- README je kompletně v angličtině.
+- Logy serveru jsou v angličtině.
+- Formát data a času se řídí zvoleným jazykem.
+
 ## [1.0.0] – 2026-10-22
 
 První vydání.
@@ -51,4 +64,5 @@ První vydání.
 - Simulátor Hikvision NVR (ISAPI s digest autentizací, RTSP s obrazem kamery a OSD).
 - Demo se dvěma NVR a ukázkovými daty (`dev/demo.sh`).
 
+[1.1.0]: https://github.com/Gelluithor/Elenvar/releases/tag/v1.1.0
 [1.0.0]: https://github.com/Gelluithor/Elenvar/releases/tag/v1.0.0

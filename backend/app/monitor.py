@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from . import app_settings, notify, updates
 from .db import SessionLocal, utcnow
+from .i18n import tr
 from .hikvision import ChannelInfo, IsapiAuthError, IsapiError, IsapiUnreachable, drift_seconds
 from .models import AuditLog, Camera, Event, Nvr, UserSession
 from .nvr_service import client_for, disk_problems, is_recorder, load_disks
@@ -69,7 +70,7 @@ class Monitor:
             except asyncio.CancelledError:
                 raise
             except Exception:  # noqa: BLE001 – smyčka nesmí spadnout
-                log.exception("Chyba v monitorovací smyčce")
+                log.exception("Error in the monitoring loop")
             interval = max(15, min(3600, int(cfg.get("poll_interval", 60))))
             try:
                 await asyncio.wait_for(self._wake.wait(), timeout=interval)
@@ -83,7 +84,7 @@ class Monitor:
         results = await asyncio.gather(*(self.poll_nvr(nvr_id, cfg) for nvr_id in ids), return_exceptions=True)
         for nvr_id, result in zip(ids, results):
             if isinstance(result, Exception):
-                log.error("Dotazování NVR %s selhalo: %r", nvr_id, result)
+                log.error("Polling NVR %s failed: %r", nvr_id, result)
 
     async def _cleanup(self, cfg: dict[str, Any]) -> None:
         if time.monotonic() - self._last_cleanup < 3600:
@@ -130,7 +131,7 @@ class Monitor:
             try:
                 disks: list[dict[str, Any]] | None = await client.storage()
             except IsapiError as exc:
-                log.info("NVR %s: stav disků nelze načíst: %s", nvr.id, exc)
+                log.info("NVR %s: cannot read disk status: %s", nvr.id, exc)
                 disks = None
             try:
                 device_time = await client.device_time()
@@ -264,7 +265,7 @@ class Monitor:
 
         if not channels and existing:
             # Prázdný seznam při existujících kamerách je spíš chyba zařízení – nic nemažeme.
-            log.warning("NVR %s vrátil prázdný seznam kanálů, kamery ponechány", nvr.id)
+            log.warning("NVR %s returned an empty channel list, keeping cameras", nvr.id)
             return
         for channel, cam in existing.items():
             if channel in seen:
@@ -316,17 +317,23 @@ class Monitor:
         send: bool = True,
     ) -> None:
         db.add(Event(severity=severity, kind=kind, nvr_id=nvr.id, camera_id=camera.id if camera else None, message=message))
-        log.info("Událost [%s] %s", severity, message)
+        log.info("Event [%s] %s", severity, tr(message, "en"))
         if not send or (recovery and not cfg.get("notify_recoveries", True)):
             return
         if not notify.enabled_channels(cfg):
             return
+        lang = cfg.get("language", "cs")
         ts = utcnow().astimezone().strftime("%d.%m.%Y %H:%M:%S")
-        body = f"{message}\n\nZařízení: {nvr.name} ({nvr.host})\nČas: {ts}\nZávažnost: {severity}"
+        severity_text = tr({"critical": "kritické", "warning": "varování"}.get(severity, "informace"), lang)
+        text = tr(message, lang)
+        body = (
+            f"{text}\n\n{tr('Zařízení', lang)}: {nvr.name} ({nvr.host})\n"
+            f"{tr('Čas', lang)}: {ts}\n{tr('Závažnost', lang)}: {severity_text}"
+        )
         payload = {"severity": severity, "kind": kind, "nvr": nvr.name, "nvr_id": nvr.id, "message": message}
         if camera is not None:
             payload.update({"camera": camera.name, "channel": camera.channel})
-        out.append((f"[Elenvar] {message}", body, payload))
+        out.append((f"[Elenvar] {text}", body, payload))
 
     def _dispatch(self, notifications: list[Notification]) -> None:
         for subject, body, payload in notifications:

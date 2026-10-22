@@ -4,6 +4,7 @@ import { api, errorMessage } from "../lib/api";
 import { formatDateTime, formatRelative } from "../lib/format";
 import { Logo } from "./Logo";
 import { Alert, Modal, Spinner, useToast } from "./ui";
+import { t } from "../lib/i18n";
 
 interface Release {
   version: string;
@@ -72,7 +73,7 @@ function ReleaseNotes({ text }: { text: string }) {
     else blocks.push(<p key={blocks.length}>{inline(line)}</p>);
   }
   flush();
-  return <div className="release-notes">{blocks.length ? blocks : <p className="muted">Bez poznámek k vydání.</p>}</div>;
+  return <div className="release-notes">{blocks.length ? blocks : <p className="muted">{t("Bez poznámek k vydání.")}</p>}</div>;
 }
 
 function waitForNewVersion(oldVersion: string, onDone: (version: string) => void, onTimeout: () => void): () => void {
@@ -140,7 +141,7 @@ export function UpdatePanel() {
     if (!progress || progress.state !== "running" || !info) return;
     if (startVersion.current === null) startVersion.current = info.current;
     const finished = (version: string) => {
-      toast(`Elenvar byl aktualizován na verzi ${version}.`);
+      toast(t("Elenvar byl aktualizován na verzi {version}.", { version: version }));
       window.setTimeout(() => window.location.reload(), 1200);
     };
     const handle = window.setInterval(async () => {
@@ -165,7 +166,7 @@ export function UpdatePanel() {
           () => {
             setRestarting(false);
             setProgress(null);
-            setError("Aplikace se po aktualizaci nevrátila do 5 minut. Zkontrolujte stav serveru.");
+            setError(t("Aplikace se po aktualizaci nevrátila do 5 minut. Zkontrolujte stav serveru."));
           },
         );
       }
@@ -175,7 +176,7 @@ export function UpdatePanel() {
 
   useEffect(() => {
     if (!progress || progress.state === "running") return;
-    if (progress.state === "done" && progress.result === "current") toast("Elenvar je aktuální, nebylo co instalovat.", "info");
+    if (progress.state === "done" && progress.result === "current") toast(t("Elenvar je aktuální, nebylo co instalovat."), "info");
   }, [progress, toast]);
 
   const check = async () => {
@@ -192,7 +193,7 @@ export function UpdatePanel() {
 
   if (!info) {
     return (
-      <section className="panel">{error ? <Alert>{error}</Alert> : <Spinner label="Načítám informace o verzi…" />}</section>
+      <section className="panel">{error ? <Alert>{error}</Alert> : <Spinner label={t("Načítám informace o verzi…")} />}</section>
     );
   }
 
@@ -204,14 +205,14 @@ export function UpdatePanel() {
       <div className="update-head">
         <Logo size={56} />
         <div className="update-title">
-          <h2 id="update-title">Aktualizace softwaru</h2>
+          <h2 id="update-title">{t("Aktualizace softwaru")}</h2>
           <span className="muted">
-            Elenvar {info.current}
-            {info.checked_at ? ` · zkontrolováno ${formatRelative(info.checked_at)}` : ""}
+            {t("Elenvar")} {info.current}
+            {info.checked_at ? t(" · zkontrolováno {checked_at}", { checked_at: formatRelative(info.checked_at) }) : ""}
           </span>
         </div>
         <button type="button" className="btn btn-small" onClick={() => void check()} disabled={checking || running}>
-          {checking ? <Spinner size={14} /> : <RefreshCw size={14} />} Zkontrolovat
+          {checking ? <Spinner size={14} /> : <RefreshCw size={14} />} {t("Zkontrolovat")}
         </button>
       </div>
 
@@ -220,19 +221,19 @@ export function UpdatePanel() {
 
       {running ? (
         <div className="update-progress" role="status" aria-live="polite">
-          <strong>{restarting ? "Restartuji Elenvar…" : progress?.phase || "Připravuji aktualizaci…"}</strong>
+          <strong>{restarting ? t("Restartuji Elenvar…") : progress?.phase || t("Připravuji aktualizaci…")}</strong>
           <div className="progress progress-indeterminate">
             <span />
           </div>
-          <span className="muted small">Během restartu bude aplikace krátce nedostupná. Stránka se poté sama obnoví.</span>
+          <span className="muted small">{t("Během restartu bude aplikace krátce nedostupná. Stránka se poté sama obnoví.")}</span>
         </div>
       ) : info.update_available && latest ? (
         <div className="update-available">
           <div className="update-version">
             <div>
-              <strong>Elenvar {latest.version}</strong>
-              {latest.prerelease && <span className="pill pill-warn ml">Předběžná verze</span>}
-              <div className="muted small">{latest.published_at ? `Vydáno ${formatDateTime(latest.published_at)}` : ""}</div>
+              <strong>{t("Elenvar")} {latest.version}</strong>
+              {latest.prerelease && <span className="pill pill-warn ml">{t("Předběžná verze")}</span>}
+              <div className="muted small">{latest.published_at ? t("Vydáno {published_at}", { published_at: formatDateTime(latest.published_at) }) : ""}</div>
             </div>
             <button
               type="button"
@@ -241,18 +242,18 @@ export function UpdatePanel() {
               disabled={!info.updater_available}
               title={info.updater_available ? undefined : info.updater_error}
             >
-              Aktualizovat nyní
+              {t("Aktualizovat nyní")}
             </button>
           </div>
           <ReleaseNotes text={latest.notes} />
           {latest.url && (
             <a className="link small" href={latest.url} target="_blank" rel="noreferrer noopener">
-              Podrobnosti o vydání <ExternalLink size={12} />
+              {t("Podrobnosti o vydání")} <ExternalLink size={12} />
             </a>
           )}
           {!info.updater_available && (
             <Alert kind="info">
-              Aktualizace z webu není dostupná ({info.updater_error}). Aktualizujte na serveru příkazem{" "}
+              {t("Aktualizace z webu není dostupná (")}{info.updater_error}{t("). Aktualizujte na serveru příkazem")}{" "}
               <code>docker compose pull &amp;&amp; docker compose up -d</code>.
             </Alert>
           )}
@@ -260,19 +261,19 @@ export function UpdatePanel() {
       ) : (
         <p className="update-current">
           {info.error && !latest
-            ? "Dostupnost nové verze se nepodařilo ověřit."
+            ? t("Dostupnost nové verze se nepodařilo ověřit.")
             : latest || info.checked_at
-              ? "Používáte nejnovější verzi Elenvaru."
-              : "Zatím nebyla provedena kontrola aktualizací."}
+              ? t("Používáte nejnovější verzi Elenvaru.")
+              : t("Zatím nebyla provedena kontrola aktualizací.")}
         </p>
       )}
 
-      {progress && progress.state === "failed" && !running && <Alert>Aktualizace selhala: {progress.message}</Alert>}
+      {progress && progress.state === "failed" && !running && <Alert>{t("Aktualizace selhala:")} {progress.message}</Alert>}
 
       {progress && progress.log.length > 0 && (
         <div className="update-log">
           <button type="button" className="link-btn" onClick={() => setShowLog((v) => !v)} aria-expanded={showLog}>
-            <ChevronDown size={14} className={showLog ? "rot" : ""} /> {showLog ? "Skrýt podrobnosti" : "Zobrazit podrobnosti"}
+            <ChevronDown size={14} className={showLog ? "rot" : ""} /> {showLog ? t("Skrýt podrobnosti") : t("Zobrazit podrobnosti")}
           </button>
           {showLog && <pre>{progress.log.join("\n")}</pre>}
         </div>
@@ -318,25 +319,25 @@ function InstallDialog({
   };
   return (
     <Modal
-      title={`Aktualizovat na verzi ${version}?`}
+      title={t("Aktualizovat na verzi {version}?", { version: version })}
       onClose={onClose}
       footer={
         <>
           <button type="button" className="btn" onClick={onClose} disabled={busy}>
-            Zrušit
+            {t("Zrušit")}
           </button>
           <button type="submit" form="install-form" className="btn btn-primary" disabled={busy || !password}>
-            {busy ? <Spinner size={16} /> : null} Aktualizovat
+            {busy ? <Spinner size={16} /> : null} {t("Aktualizovat")}
           </button>
         </>
       }
     >
       <form id="install-form" className="form" onSubmit={submit}>
         <p className="confirm-message">
-          Elenvar stáhne novou verzi a restartuje se. Záznamy na NVR ani nastavení se nemění; živý obraz se na chvíli přeruší.
+          {t("Elenvar stáhne novou verzi a restartuje se. Záznamy na NVR ani nastavení se nemění; živý obraz se na chvíli přeruší.")}
         </p>
         <div className="field">
-          <label htmlFor="install-password">Potvrďte heslem</label>
+          <label htmlFor="install-password">{t("Potvrďte heslem")}</label>
           <input
             id="install-password"
             className="input"

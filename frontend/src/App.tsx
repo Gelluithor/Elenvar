@@ -17,13 +17,14 @@ import { PlaybackPage } from "./pages/Playback";
 import { SettingsPage } from "./pages/Settings";
 import { UsersPage } from "./pages/Users";
 import type { Role } from "./types";
+import { t } from "./lib/i18n";
 
 function RequireRole({ role, children }: { role: Role; children: ReactNode }) {
   const { user } = useAuth();
   if (!hasRole(user?.role, role)) {
     return (
-      <EmptyState icon={<ShieldAlert size={28} />} title="Přístup odepřen">
-        K této části nemáte oprávnění.
+      <EmptyState icon={<ShieldAlert size={28} />} title={t("Přístup odepřen")}>
+        {t("K této části nemáte oprávnění.")}
       </EmptyState>
     );
   }

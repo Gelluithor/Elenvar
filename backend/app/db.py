@@ -27,7 +27,7 @@ class UTCDateTime(TypeDecorator):
         if value is None:
             return None
         if value.tzinfo is None:
-            raise ValueError("Naivní datetime není povolen – použijte UTC s tzinfo")
+            raise ValueError("Naive datetime is not allowed – use UTC with tzinfo")
         return value.astimezone(timezone.utc).replace(tzinfo=None)
 
     def process_result_value(self, value: datetime | None, dialect) -> datetime | None:

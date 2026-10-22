@@ -17,6 +17,7 @@ from ..audit import add_audit
 from ..db import SessionLocal, get_db
 from ..deps import AuthContext, require_admin, require_viewer, ws_authenticate
 from ..hikvision import IsapiError, live_rtsp_path
+from ..i18n import tr
 from ..models import Camera, Nvr
 from ..nvr_service import client_for, connection_for
 from ..streaming import proxy_stream
@@ -123,7 +124,7 @@ async def live(websocket: WebSocket, camera_id: int, quality: Literal["main", "s
     try:
         await go2rtc.ensure_stream(name, source)
     except go2rtc.Go2rtcError as exc:
-        await websocket.send_json({"type": "error", "value": str(exc)})
+        await websocket.send_json({"type": "error", "value": tr(str(exc))})
         await websocket.close(code=1011)
         return
     await proxy_stream(websocket, name, ctx.session.id)

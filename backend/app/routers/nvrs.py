@@ -16,6 +16,7 @@ from .. import go2rtc
 from ..audit import add_audit, client_ip
 from ..db import get_db
 from ..deps import AuthContext, has_role, require_admin, require_viewer
+from ..i18n import tr
 from ..hikvision import (
     STREAM_INT_FIELDS,
     Connection,
@@ -201,7 +202,7 @@ async def test_connection(
         info = await client.device_info()
         channels = await client.channels(info["device_type"])
     except IsapiError as exc:
-        return {"ok": False, "message": str(exc)}
+        return {"ok": False, "message": tr(str(exc))}
     return {"ok": True, "info": info, "channel_count": len(channels)}
 
 

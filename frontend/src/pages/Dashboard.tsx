@@ -5,6 +5,7 @@ import { Alert, EmptyState, NvrStatusPill, PageHeader, PageLoader, usePolling } 
 import { api, errorMessage } from "../lib/api";
 import { formatRelative } from "../lib/format";
 import type { Dashboard, Nvr, Problem } from "../types";
+import { t } from "../lib/i18n";
 
 function StatCard({
   icon,
@@ -81,29 +82,29 @@ export function DashboardPage() {
 
   return (
     <div className="page">
-      <PageHeader title="Přehled" subtitle="Aktuální stav všech zařízení a kamer" />
+      <PageHeader title={t("Přehled")} subtitle={t("Aktuální stav všech zařízení a kamer")} />
       {error && <Alert>{error}</Alert>}
 
       <section className="stats">
-        <StatCard icon={<Server size={20} />} label="Zařízení online" value={data.nvr_online} total={data.nvr_total} tone={ratioTone(data.nvr_online, data.nvr_total)} to="/devices" />
-        <StatCard icon={<Video size={20} />} label="Kamery online" value={data.camera_online} total={data.camera_total} tone={ratioTone(data.camera_online, data.camera_total)} to="/live" />
-        <StatCard icon={<Activity size={20} />} label="Sledované kamery v pořádku" value={data.monitored_online} total={data.monitored_total} tone={ratioTone(data.monitored_online, data.monitored_total)} to="/monitoring" />
-        <StatCard icon={<BellRing size={20} />} label="Nepotvrzené události" value={data.unacknowledged_events} tone={data.unacknowledged_events ? "warn" : "ok"} to="/monitoring" />
+        <StatCard icon={<Server size={20} />} label={t("Zařízení online")} value={data.nvr_online} total={data.nvr_total} tone={ratioTone(data.nvr_online, data.nvr_total)} to="/devices" />
+        <StatCard icon={<Video size={20} />} label={t("Kamery online")} value={data.camera_online} total={data.camera_total} tone={ratioTone(data.camera_online, data.camera_total)} to="/live" />
+        <StatCard icon={<Activity size={20} />} label={t("Sledované kamery v pořádku")} value={data.monitored_online} total={data.monitored_total} tone={ratioTone(data.monitored_online, data.monitored_total)} to="/monitoring" />
+        <StatCard icon={<BellRing size={20} />} label={t("Nepotvrzené události")} value={data.unacknowledged_events} tone={data.unacknowledged_events ? "warn" : "ok"} to="/monitoring" />
       </section>
 
       <section className="panel">
         <div className="panel-header">
-          <h2>Aktuální problémy</h2>
+          <h2>{t("Aktuální problémy")}</h2>
           <Link to="/monitoring" className="link">
-            Historie událostí
+            {t("Historie událostí")}
           </Link>
         </div>
         {data.problems.length === 0 ? (
           <div className="all-good">
             <CircleCheck size={22} />
             <div>
-              <strong>Vše v pořádku</strong>
-              <span>Všechna zařízení a sledované kamery fungují.</span>
+              <strong>{t("Vše v pořádku")}</strong>
+              <span>{t("Všechna zařízení a sledované kamery fungují.")}</span>
             </div>
           </div>
         ) : (
@@ -127,11 +128,11 @@ export function DashboardPage() {
 
       <section className="panel">
         <div className="panel-header">
-          <h2>Zařízení</h2>
+          <h2>{t("Zařízení")}</h2>
         </div>
         {nvrs.length === 0 ? (
-          <EmptyState icon={<Server size={28} />} title="Zatím žádná zařízení">
-            Přidejte první NVR v sekci <Link to="/devices">Zařízení</Link>.
+          <EmptyState icon={<Server size={28} />} title={t("Zatím žádná zařízení")}>
+            {t("Přidejte první NVR v sekci")} <Link to="/devices">{t("Zařízení")}</Link>.
           </EmptyState>
         ) : (
           <div className="nvr-grid">
@@ -143,13 +144,13 @@ export function DashboardPage() {
                 </div>
                 <div className="nvr-card-model">{n.model || "—"}</div>
                 <div className="nvr-card-stats">
-                  <span title="Kamery online">
+                  <span title={t("Kamery online")}>
                     <Video size={15} /> {n.camera_online}/{n.camera_count}
                   </span>
-                  <span title="Disky" className={n.disk_problems.length ? "tone-bad-text" : ""}>
-                    <HardDrive size={15} /> {n.disk_problems.length ? "Problém" : n.disks.length ? "OK" : "—"}
+                  <span title={t("Disky")} className={n.disk_problems.length ? "tone-bad-text" : ""}>
+                    <HardDrive size={15} /> {n.disk_problems.length ? t("Problém") : n.disks.length ? "OK" : "—"}
                   </span>
-                  <span title="Naposledy dostupné">
+                  <span title={t("Naposledy dostupné")}>
                     <Clock size={15} /> {formatRelative(n.last_seen_at)}
                   </span>
                 </div>

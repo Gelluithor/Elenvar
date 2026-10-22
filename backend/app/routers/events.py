@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import app_settings
 from ..audit import add_audit
+from ..i18n import tr
 from ..db import get_db, utcnow
 from ..deps import AuthContext, require_operator, require_viewer
 from ..models import Camera, Event, Nvr
@@ -28,7 +29,7 @@ def _event_view(ev: Event, nvr_names: dict[int, str]) -> dict:
         "nvr_id": ev.nvr_id,
         "nvr_name": nvr_names.get(ev.nvr_id or 0, ""),
         "camera_id": ev.camera_id,
-        "message": ev.message,
+        "message": tr(ev.message),
         "acknowledged_at": ev.acknowledged_at,
         "acknowledged_by": ev.acknowledged_by,
     }
@@ -164,6 +165,8 @@ async def dashboard(_: AuthContext = Depends(require_viewer), db: AsyncSession =
     )
     order = {"critical": 0, "warning": 1}
     problems.sort(key=lambda p: order.get(p["severity"], 2))
+    for problem in problems:
+        problem["message"] = tr(problem["message"])
     return {
         "nvr_total": len(enabled),
         "nvr_online": sum(1 for n in enabled if n.status == "online"),

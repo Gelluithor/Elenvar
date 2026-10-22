@@ -26,9 +26,9 @@ def _env_int(name: str, default: int, minimum: int, maximum: int) -> int:
     try:
         value = int(raw)
     except ValueError as exc:
-        raise RuntimeError(f"Proměnná {name} musí být celé číslo") from exc
+        raise RuntimeError(f"Variable {name} must be an integer") from exc
     if not minimum <= value <= maximum:
-        raise RuntimeError(f"Proměnná {name} musí být v rozsahu {minimum}–{maximum}")
+        raise RuntimeError(f"Variable {name} must be between {minimum} and {maximum}")
     return value
 
 
@@ -50,7 +50,7 @@ def load_settings() -> Settings:
     data_dir = Path(os.environ.get("ELENVAR_DATA_DIR", "/data"))
     playback_source = os.environ.get("ELENVAR_PLAYBACK_SOURCE", "rtsp").strip().lower()
     if playback_source not in {"rtsp", "ffmpeg"}:
-        raise RuntimeError("ELENVAR_PLAYBACK_SOURCE musí být 'rtsp' nebo 'ffmpeg'")
+        raise RuntimeError("ELENVAR_PLAYBACK_SOURCE must be 'rtsp' or 'ffmpeg'")
     admin_password = os.environ.get("ELENVAR_ADMIN_PASSWORD") or None
     return Settings(
         data_dir=data_dir,
@@ -82,8 +82,8 @@ def load_secret_key() -> bytes:
             Fernet(key)
         except (ValueError, TypeError) as exc:
             raise RuntimeError(
-                "ELENVAR_SECRET_KEY není platný klíč (32 bajtů v URL-safe base64). "
-                "Vygenerujte ho příkazem: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+                "ELENVAR_SECRET_KEY is not a valid key (32 bytes, URL-safe base64). "
+                "Generate one with: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
             ) from exc
         return key
 
@@ -98,5 +98,5 @@ def load_secret_key() -> bytes:
     fd = os.open(key_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(fd, "wb") as fh:
         fh.write(key)
-    log.warning("Vygenerován nový šifrovací klíč %s – zálohujte ho spolu s databází.", key_file)
+    log.warning("Generated a new encryption key %s – back it up together with the database.", key_file)
     return key

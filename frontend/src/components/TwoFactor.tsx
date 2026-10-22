@@ -3,6 +3,7 @@ import { Check, Copy, Download, ShieldCheck } from "lucide-react";
 import { api, errorMessage } from "../lib/api";
 import type { SessionPayload } from "../types";
 import { Alert, Spinner } from "./ui";
+import { t } from "../lib/i18n";
 
 interface SetupData {
   secret: string;
@@ -46,27 +47,27 @@ export function TotpSetup({ onEnabled }: { onEnabled: (result: EnableResult) => 
   };
 
   if (!setup) {
-    return error ? <Alert>{error}</Alert> : <Spinner label="Připravuji…" />;
+    return error ? <Alert>{error}</Alert> : <Spinner label={t("Připravuji…")} />;
   }
   return (
     <form className="totp-setup" onSubmit={submit}>
       <ol className="steps">
         <li>
-          Nainstalujte si ověřovací aplikaci (např. <strong>Microsoft Authenticator</strong>,{" "}
-          <strong>Google Authenticator</strong>, <strong>2FAS</strong> nebo <strong>Bitwarden</strong>).
+          {t("Nainstalujte si ověřovací aplikaci (např.")} <strong>{t("Microsoft Authenticator")}</strong>,{" "}
+          <strong>{t("Google Authenticator")}</strong>, <strong>{t("2FAS")}</strong> {t("nebo")} <strong>{t("Bitwarden")}</strong>).
         </li>
-        <li>Naskenujte QR kód aplikací.</li>
-        <li>Zadejte šestimístný kód, který aplikace zobrazí.</li>
+        <li>{t("Naskenujte QR kód aplikací.")}</li>
+        <li>{t("Zadejte šestimístný kód, který aplikace zobrazí.")}</li>
       </ol>
       <div className="qr-wrap">
-        <img src={setup.qr} alt="QR kód pro ověřovací aplikaci" width={200} height={200} />
+        <img src={setup.qr} alt={t("QR kód pro ověřovací aplikaci")} width={200} height={200} />
       </div>
       <button type="button" className="link-btn" onClick={() => setShowSecret((v) => !v)}>
-        {showSecret ? "Skrýt klíč" : "Nelze skenovat? Zobrazit klíč pro ruční zadání"}
+        {showSecret ? t("Skrýt klíč") : t("Nelze skenovat? Zobrazit klíč pro ruční zadání")}
       </button>
       {showSecret && <code className="secret">{setup.secret.match(/.{1,4}/g)?.join(" ")}</code>}
       <div className="field">
-        <label htmlFor="totp-code">Ověřovací kód</label>
+        <label htmlFor="totp-code">{t("Ověřovací kód")}</label>
         <input
           id="totp-code"
           className="input code-input"
@@ -82,13 +83,13 @@ export function TotpSetup({ onEnabled }: { onEnabled: (result: EnableResult) => 
       </div>
       {error && <Alert>{error}</Alert>}
       <button type="submit" className="btn btn-primary btn-block" disabled={busy || code.replace(/\s/g, "").length !== 6}>
-        {busy ? <Spinner size={16} /> : <ShieldCheck size={16} />} Ověřit a zapnout
+        {busy ? <Spinner size={16} /> : <ShieldCheck size={16} />} {t("Ověřit a zapnout")}
       </button>
     </form>
   );
 }
 
-export function RecoveryCodes({ codes, onDone, doneLabel = "Mám kódy uložené" }: { codes: string[]; onDone: () => void; doneLabel?: string }) {
+export function RecoveryCodes({ codes, onDone, doneLabel = t("Mám kódy uložené") }: { codes: string[]; onDone: () => void; doneLabel?: string }) {
   const [copied, setCopied] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const text = codes.join("\n");
@@ -105,7 +106,7 @@ export function RecoveryCodes({ codes, onDone, doneLabel = "Mám kódy uložené
 
   const download = () => {
     const blob = new Blob(
-      [`Elenvar – záložní kódy pro přihlášení\nKaždý kód lze použít jen jednou.\n\n${text}\n`],
+      [t("Elenvar – záložní kódy pro přihlášení\nKaždý kód lze použít jen jednou.\n\n{text}\n", { text: text })],
       { type: "text/plain;charset=utf-8" },
     );
     const url = URL.createObjectURL(blob);
@@ -119,8 +120,8 @@ export function RecoveryCodes({ codes, onDone, doneLabel = "Mám kódy uložené
   return (
     <div className="recovery">
       <Alert kind="warning">
-        Uložte si tyto záložní kódy na bezpečné místo. Použijete je, pokud ztratíte telefon. Každý kód platí jen jednou a
-        <strong> znovu se už nezobrazí</strong>.
+        {t("Uložte si tyto záložní kódy na bezpečné místo. Použijete je, pokud ztratíte telefon. Každý kód platí jen jednou a")}
+        <strong> {t("znovu se už nezobrazí")}</strong>.
       </Alert>
       <ul className="recovery-codes">
         {codes.map((c) => (
@@ -131,15 +132,15 @@ export function RecoveryCodes({ codes, onDone, doneLabel = "Mám kódy uložené
       </ul>
       <div className="btn-row">
         <button type="button" className="btn btn-ghost" onClick={copy}>
-          {copied ? <Check size={16} /> : <Copy size={16} />} {copied ? "Zkopírováno" : "Kopírovat"}
+          {copied ? <Check size={16} /> : <Copy size={16} />} {copied ? t("Zkopírováno") : t("Kopírovat")}
         </button>
         <button type="button" className="btn btn-ghost" onClick={download}>
-          <Download size={16} /> Stáhnout
+          <Download size={16} /> {t("Stáhnout")}
         </button>
       </div>
       <label className="check">
         <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
-        <span>Kódy jsem si bezpečně uložil(a)</span>
+        <span>{t("Kódy jsem si bezpečně uložil(a)")}</span>
       </label>
       <button type="button" className="btn btn-primary btn-block" disabled={!confirmed} onClick={onDone}>
         {doneLabel}

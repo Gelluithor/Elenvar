@@ -6,6 +6,7 @@ import { Alert, EmptyState, Modal, NvrStatusPill, PageHeader, PageLoader, Spinne
 import { api, errorMessage } from "../lib/api";
 import { formatRelative, hasRole } from "../lib/format";
 import type { Nvr } from "../types";
+import { t } from "../lib/i18n";
 
 interface FormState {
   name: string;
@@ -111,31 +112,31 @@ export function NvrFormModal({ nvr, onClose, onSaved }: { nvr?: Nvr; onClose: ()
 
   return (
     <Modal
-      title={editing ? `Upravit zařízení ${nvr!.name}` : "Přidat zařízení"}
+      title={editing ? t("Upravit zařízení {name}", { name: nvr!.name }) : t("Přidat zařízení")}
       onClose={onClose}
       wide
       footer={
         <>
           <button type="button" className="btn btn-ghost" onClick={() => void runTest()} disabled={testing || !form.host || !form.username || (!editing && !form.password)}>
-            {testing ? <Spinner size={16} /> : <Plug size={16} />} Otestovat připojení
+            {testing ? <Spinner size={16} /> : <Plug size={16} />} {t("Otestovat připojení")}
           </button>
           <span className="toolbar-spacer" />
           <button type="button" className="btn btn-ghost" onClick={onClose}>
-            Zrušit
+            {t("Zrušit")}
           </button>
           <button type="submit" form="nvr-form" className="btn btn-primary" disabled={busy}>
-            {busy ? <Spinner size={16} /> : null} Uložit
+            {busy ? <Spinner size={16} /> : null} {t("Uložit")}
           </button>
         </>
       }
     >
       <form id="nvr-form" className="form grid-2" onSubmit={submit}>
         <div className="field span-2">
-          <label htmlFor="nvr-name">Název</label>
-          <input id="nvr-name" className="input" value={form.name} onChange={(e) => set("name", e.target.value)} required maxLength={128} placeholder="např. Sklad – NVR" />
+          <label htmlFor="nvr-name">{t("Název")}</label>
+          <input id="nvr-name" className="input" value={form.name} onChange={(e) => set("name", e.target.value)} required maxLength={128} placeholder={t("např. Sklad – NVR")} />
         </div>
         <div className="field">
-          <label htmlFor="nvr-host">IP adresa nebo hostname</label>
+          <label htmlFor="nvr-host">{t("IP adresa nebo hostname")}</label>
           <input id="nvr-host" className="input" value={form.host} onChange={(e) => set("host", e.target.value)} required placeholder="192.168.1.64" spellCheck={false} />
         </div>
         <div className="field-row">
@@ -144,16 +145,16 @@ export function NvrFormModal({ nvr, onClose, onSaved }: { nvr?: Nvr; onClose: ()
             <input id="nvr-http" className="input" type="number" min={1} max={65535} value={form.http_port} onChange={(e) => set("http_port", Number(e.target.value))} required />
           </div>
           <div className="field">
-            <label htmlFor="nvr-rtsp">RTSP port</label>
+            <label htmlFor="nvr-rtsp">{t("RTSP port")}</label>
             <input id="nvr-rtsp" className="input" type="number" min={1} max={65535} value={form.rtsp_port} onChange={(e) => set("rtsp_port", Number(e.target.value))} required />
           </div>
         </div>
         <div className="field">
-          <label htmlFor="nvr-user">Uživatel</label>
+          <label htmlFor="nvr-user">{t("Uživatel")}</label>
           <input id="nvr-user" className="input" value={form.username} onChange={(e) => set("username", e.target.value)} required autoComplete="off" spellCheck={false} />
         </div>
         <div className="field">
-          <label htmlFor="nvr-pass">Heslo</label>
+          <label htmlFor="nvr-pass">{t("Heslo")}</label>
           <input
             id="nvr-pass"
             className="input"
@@ -162,32 +163,31 @@ export function NvrFormModal({ nvr, onClose, onSaved }: { nvr?: Nvr; onClose: ()
             onChange={(e) => set("password", e.target.value)}
             required={!editing}
             autoComplete="new-password"
-            placeholder={editing ? "Ponechat beze změny" : ""}
+            placeholder={editing ? t("Ponechat beze změny") : ""}
           />
         </div>
         <div className="span-2 switches">
-          <Switch checked={form.use_https} onChange={(v) => { set("use_https", v); if (v && form.http_port === 80) set("http_port", 443); if (!v && form.http_port === 443) set("http_port", 80); }} label="Komunikovat přes HTTPS" description="Šifrované spojení na ISAPI rozhraní NVR." />
+          <Switch checked={form.use_https} onChange={(v) => { set("use_https", v); if (v && form.http_port === 80) set("http_port", 443); if (!v && form.http_port === 443) set("http_port", 80); }} label={t("Komunikovat přes HTTPS")} description={t("Šifrované spojení na ISAPI rozhraní NVR.")} />
           {form.use_https && (
-            <Switch checked={form.verify_tls} onChange={(v) => set("verify_tls", v)} label="Ověřovat certifikát" description="Vypněte pro výchozí self-signed certifikát Hikvision." />
+            <Switch checked={form.verify_tls} onChange={(v) => set("verify_tls", v)} label={t("Ověřovat certifikát")} description={t("Vypněte pro výchozí self-signed certifikát Hikvision.")} />
           )}
-          <Switch checked={form.enabled} onChange={(v) => set("enabled", v)} label="Monitorovat zařízení" description="Pravidelně kontrolovat stav zařízení a kamer." />
-          <Switch checked={form.transcode} onChange={(v) => set("transcode", v)} label="Převádět video na H.264" description="Pro kamery s H.265, které prohlížeč neumí přehrát. Zatěžuje server." />
+          <Switch checked={form.enabled} onChange={(v) => set("enabled", v)} label={t("Monitorovat zařízení")} description={t("Pravidelně kontrolovat stav zařízení a kamer.")} />
+          <Switch checked={form.transcode} onChange={(v) => set("transcode", v)} label={t("Převádět video na H.264")} description={t("Pro kamery s H.265, které prohlížeč neumí přehrát. Zatěžuje server.")} />
         </div>
         <div className="field span-2">
-          <label htmlFor="nvr-notes">Poznámka</label>
+          <label htmlFor="nvr-notes">{t("Poznámka")}</label>
           <textarea id="nvr-notes" className="input" rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} maxLength={2000} />
         </div>
         <div className="span-2">
           <Alert kind="info">
-            Doporučujeme na NVR vytvořit samostatný účet pouze pro Elenvar. Pro úpravu nastavení kamer musí mít oprávnění ke
-            konfiguraci, jinak postačí oprávnění k živému obrazu a přehrávání.
+            {t("Doporučujeme na NVR vytvořit samostatný účet pouze pro Elenvar. Pro úpravu nastavení kamer musí mít oprávnění ke konfiguraci, jinak postačí oprávnění k živému obrazu a přehrávání.")}
           </Alert>
         </div>
         {test && (
           <div className="span-2">
             {test.ok ? (
               <Alert kind="success">
-                Připojeno: <strong>{test.info?.model}</strong> ({test.info?.device_type}), firmware {test.info?.firmware}, kamer: {test.channel_count}
+                {t("Připojeno:")} <strong>{test.info?.model}</strong> ({test.info?.device_type}{t("), firmware")} {test.info?.firmware}{t(", kamer:")} {test.channel_count}
               </Alert>
             ) : (
               <Alert>{test.message}</Alert>
@@ -232,20 +232,20 @@ export function DevicesPage() {
   return (
     <div className="page">
       <PageHeader
-        title="Zařízení"
-        subtitle="NVR, DVR a samostatné kamery Hikvision"
+        title={t("Zařízení")}
+        subtitle={t("NVR, DVR a samostatné kamery Hikvision")}
         actions={
           isAdmin && (
             <button type="button" className="btn btn-primary" onClick={() => setAdding(true)}>
-              <Plus size={16} /> Přidat zařízení
+              <Plus size={16} /> {t("Přidat zařízení")}
             </button>
           )
         }
       />
       {error && <Alert>{error}</Alert>}
       {nvrs.length === 0 ? (
-        <EmptyState icon={<Server size={28} />} title="Zatím žádná zařízení">
-          {isAdmin ? "Přidejte první NVR tlačítkem „Přidat zařízení“." : "Požádejte administrátora o přidání zařízení."}
+        <EmptyState icon={<Server size={28} />} title={t("Zatím žádná zařízení")}>
+          {isAdmin ? t("Přidejte první NVR tlačítkem „Přidat zařízení“.") : t("Požádejte administrátora o přidání zařízení.")}
         </EmptyState>
       ) : (
         <div className="panel">
@@ -253,13 +253,13 @@ export function DevicesPage() {
             <table className="table table-click">
               <thead>
                 <tr>
-                  <th>Název</th>
-                  <th>Stav</th>
-                  <th>Model</th>
-                  {isAdmin && <th>Adresa</th>}
-                  <th>Kamery</th>
-                  <th>Úložiště</th>
-                  <th>Naposledy dostupné</th>
+                  <th>{t("Název")}</th>
+                  <th>{t("Stav")}</th>
+                  <th>{t("Model")}</th>
+                  {isAdmin && <th>{t("Adresa")}</th>}
+                  <th>{t("Kamery")}</th>
+                  <th>{t("Úložiště")}</th>
+                  <th>{t("Naposledy dostupné")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -287,7 +287,7 @@ export function DevicesPage() {
                     </td>
                     <td>
                       <span className={n.disk_problems.length ? "tone-bad-text" : ""}>
-                        <HardDrive size={14} /> {n.disk_problems.length ? `${n.disk_problems.length}× problém` : n.disks.length ? "OK" : "—"}
+                        <HardDrive size={14} /> {n.disk_problems.length ? t("{length}× problém", { length: n.disk_problems.length }) : n.disks.length ? "OK" : "—"}
                       </span>
                     </td>
                     <td className="nowrap">
@@ -305,7 +305,7 @@ export function DevicesPage() {
           onClose={() => setAdding(false)}
           onSaved={(n) => {
             setAdding(false);
-            toast(`Zařízení ${n.name} bylo přidáno. Načítám stav…`);
+            toast(t("Zařízení {name} bylo přidáno. Načítám stav…", { name: n.name }));
             void load();
             window.setTimeout(() => void load(), 4000);
           }}

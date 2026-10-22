@@ -5,6 +5,7 @@ import { Alert, PageHeader, PageLoader, Spinner, Switch, useToast } from "../com
 import { UpdatePanel } from "../components/UpdatePanel";
 import { api, errorMessage } from "../lib/api";
 import type { AppSettings } from "../types";
+import { t } from "../lib/i18n";
 
 export function SettingsPage() {
   const { user } = useAuth();
@@ -36,7 +37,7 @@ export function SettingsPage() {
       const saved = await api<AppSettings>("/api/settings", { method: "PUT", body });
       setForm(saved);
       setSmtpPassword("");
-      toast("Nastavení bylo uloženo.");
+      toast(t("Nastavení bylo uloženo."));
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -48,7 +49,7 @@ export function SettingsPage() {
     setTesting(true);
     try {
       const res = await api<{ ok: boolean; errors: string[] }>("/api/settings/test-notification", { method: "POST" });
-      if (res.ok) toast("Testovací upozornění bylo odesláno.");
+      if (res.ok) toast(t("Testovací upozornění bylo odesláno."));
       else toast(res.errors.join(" · "), "error");
     } catch (err) {
       toast(errorMessage(err), "error");
@@ -62,11 +63,11 @@ export function SettingsPage() {
   return (
     <div className="page">
       <PageHeader
-        title="Nastavení"
-        subtitle="Zabezpečení, monitoring a upozornění"
+        title={t("Nastavení")}
+        subtitle={t("Zabezpečení, monitoring a upozornění")}
         actions={
           <button type="submit" form="settings-form" className="btn btn-primary" disabled={busy}>
-            {busy ? <Spinner size={16} /> : <Save size={16} />} Uložit
+            {busy ? <Spinner size={16} /> : <Save size={16} />} {t("Uložit")}
           </button>
         }
       />
@@ -75,16 +76,16 @@ export function SettingsPage() {
       <form id="settings-form" className="settings" onSubmit={submit}>
         <section className="panel">
           <h2>
-            <ShieldCheck size={18} /> Zabezpečení
+            <ShieldCheck size={18} /> {t("Zabezpečení")}
           </h2>
           <Switch
             checked={form.require_2fa}
             onChange={(v) => set("require_2fa", v)}
-            label="Vyžadovat dvoufázové ověření pro všechny uživatele"
+            label={t("Vyžadovat dvoufázové ověření pro všechny uživatele")}
             description={
               user?.totp_enabled
-                ? "Uživatelé bez 2FA si ho musí nastavit při příštím přihlášení (jejich relace se ukončí)."
-                : "Pro zapnutí si nejprve nastavte 2FA u svého účtu."
+                ? t("Uživatelé bez 2FA si ho musí nastavit při příštím přihlášení (jejich relace se ukončí).")
+                : t("Pro zapnutí si nejprve nastavte 2FA u svého účtu.")
             }
             disabled={!form.require_2fa && !user?.totp_enabled}
           />
@@ -92,29 +93,29 @@ export function SettingsPage() {
 
         <section className="panel">
           <h2>
-            <Timer size={18} /> Monitoring
+            <Timer size={18} /> {t("Monitoring")}
           </h2>
           <div className="grid-2">
             <div className="field">
-              <label htmlFor="s-poll">Interval kontroly (s)</label>
+              <label htmlFor="s-poll">{t("Interval kontroly (s)")}</label>
               <input id="s-poll" className="input" type="number" min={15} max={3600} value={form.poll_interval} onChange={(e) => set("poll_interval", Number(e.target.value))} />
-              <div className="field-hint">Jak často se zjišťuje stav zařízení a kamer.</div>
+              <div className="field-hint">{t("Jak často se zjišťuje stav zařízení a kamer.")}</div>
             </div>
             <div className="field">
-              <label htmlFor="s-th">Počet selhání před upozorněním</label>
+              <label htmlFor="s-th">{t("Počet selhání před upozorněním")}</label>
               <input id="s-th" className="input" type="number" min={1} max={20} value={form.offline_threshold} onChange={(e) => set("offline_threshold", Number(e.target.value))} />
-              <div className="field-hint">Chrání před planými poplachy při krátkém výpadku.</div>
+              <div className="field-hint">{t("Chrání před planými poplachy při krátkém výpadku.")}</div>
             </div>
             <div className="field">
-              <label htmlFor="s-drift">Povolená odchylka času (s)</label>
+              <label htmlFor="s-drift">{t("Povolená odchylka času (s)")}</label>
               <input id="s-drift" className="input" type="number" min={10} max={86400} value={form.time_drift_threshold} onChange={(e) => set("time_drift_threshold", Number(e.target.value))} />
             </div>
             <div className="field">
-              <label htmlFor="s-ret">Uchovávat události (dny)</label>
+              <label htmlFor="s-ret">{t("Uchovávat události (dny)")}</label>
               <input id="s-ret" className="input" type="number" min={1} max={3650} value={form.event_retention_days} onChange={(e) => set("event_retention_days", Number(e.target.value))} />
             </div>
             <div className="field">
-              <label htmlFor="s-aret">Uchovávat audit (dny)</label>
+              <label htmlFor="s-aret">{t("Uchovávat audit (dny)")}</label>
               <input id="s-aret" className="input" type="number" min={30} max={3650} value={form.audit_retention_days} onChange={(e) => set("audit_retention_days", Number(e.target.value))} />
             </div>
           </div>
@@ -122,52 +123,52 @@ export function SettingsPage() {
 
         <section className="panel">
           <h2>
-            <Mail size={18} /> Upozornění e-mailem
+            <Mail size={18} /> {t("Upozornění e-mailem")}
           </h2>
-          <Switch checked={form.smtp_enabled} onChange={(v) => set("smtp_enabled", v)} label="Odesílat upozornění e-mailem" />
+          <Switch checked={form.smtp_enabled} onChange={(v) => set("smtp_enabled", v)} label={t("Odesílat upozornění e-mailem")} />
           {form.smtp_enabled && (
             <div className="grid-2">
               <div className="field">
-                <label htmlFor="s-host">SMTP server</label>
-                <input id="s-host" className="input" value={form.smtp_host} onChange={(e) => set("smtp_host", e.target.value)} placeholder="smtp.firma.cz" />
+                <label htmlFor="s-host">{t("SMTP server")}</label>
+                <input id="s-host" className="input" value={form.smtp_host} onChange={(e) => set("smtp_host", e.target.value)} placeholder={t("smtp.firma.cz")} />
               </div>
               <div className="field-row">
                 <div className="field">
-                  <label htmlFor="s-port">Port</label>
+                  <label htmlFor="s-port">{t("Port")}</label>
                   <input id="s-port" className="input" type="number" min={1} max={65535} value={form.smtp_port} onChange={(e) => set("smtp_port", Number(e.target.value))} />
                 </div>
                 <div className="field">
-                  <label htmlFor="s-sec">Zabezpečení</label>
+                  <label htmlFor="s-sec">{t("Zabezpečení")}</label>
                   <select id="s-sec" className="input" value={form.smtp_security} onChange={(e) => set("smtp_security", e.target.value as AppSettings["smtp_security"])}>
-                    <option value="starttls">STARTTLS</option>
-                    <option value="ssl">SSL/TLS</option>
-                    <option value="none">Žádné</option>
+                    <option value="starttls">{t("STARTTLS")}</option>
+                    <option value="ssl">{t("SSL/TLS")}</option>
+                    <option value="none">{t("Žádné")}</option>
                   </select>
                 </div>
               </div>
               <div className="field">
-                <label htmlFor="s-user">Uživatel</label>
+                <label htmlFor="s-user">{t("Uživatel")}</label>
                 <input id="s-user" className="input" value={form.smtp_username} onChange={(e) => set("smtp_username", e.target.value)} autoComplete="off" />
               </div>
               <div className="field">
-                <label htmlFor="s-pass">Heslo</label>
+                <label htmlFor="s-pass">{t("Heslo")}</label>
                 <input
                   id="s-pass"
                   className="input"
                   type="password"
                   value={smtpPassword}
                   onChange={(e) => setSmtpPassword(e.target.value)}
-                  placeholder={form.smtp_password_set ? "Uloženo – vyplňte jen pro změnu" : ""}
+                  placeholder={form.smtp_password_set ? t("Uloženo – vyplňte jen pro změnu") : ""}
                   autoComplete="new-password"
                 />
               </div>
               <div className="field">
-                <label htmlFor="s-from">Odesílatel</label>
-                <input id="s-from" className="input" value={form.smtp_from} onChange={(e) => set("smtp_from", e.target.value)} placeholder="elenvar@firma.cz" />
+                <label htmlFor="s-from">{t("Odesílatel")}</label>
+                <input id="s-from" className="input" value={form.smtp_from} onChange={(e) => set("smtp_from", e.target.value)} placeholder={t("elenvar@firma.cz")} />
               </div>
               <div className="field">
-                <label htmlFor="s-to">Příjemci</label>
-                <input id="s-to" className="input" value={form.smtp_to} onChange={(e) => set("smtp_to", e.target.value)} placeholder="technik@firma.cz, vedouci@firma.cz" />
+                <label htmlFor="s-to">{t("Příjemci")}</label>
+                <input id="s-to" className="input" value={form.smtp_to} onChange={(e) => set("smtp_to", e.target.value)} placeholder={t("technik@firma.cz, vedouci@firma.cz")} />
               </div>
             </div>
           )}
@@ -175,44 +176,52 @@ export function SettingsPage() {
 
         <section className="panel">
           <h2>
-            <Webhook size={18} /> Webhook
+            <Webhook size={18} /> {t("Webhook")}
           </h2>
           <Switch
             checked={form.webhook_enabled}
             onChange={(v) => set("webhook_enabled", v)}
-            label="Odesílat upozornění na webhook"
-            description="JSON s poli text/content – funguje se Slackem, Discordem, Mattermostem, Home Assistantem apod."
+            label={t("Odesílat upozornění na webhook")}
+            description={t("JSON s poli text/content – funguje se Slackem, Discordem, Mattermostem, Home Assistantem apod.")}
           />
           {form.webhook_enabled && (
             <div className="field">
-              <label htmlFor="s-wh">URL webhooku</label>
-              <input id="s-wh" className="input" type="url" value={form.webhook_url} onChange={(e) => set("webhook_url", e.target.value)} placeholder="https://…" />
+              <label htmlFor="s-wh">{t("URL webhooku")}</label>
+              <input id="s-wh" className="input" type="url" value={form.webhook_url} onChange={(e) => set("webhook_url", e.target.value)} placeholder={t("https://…")} />
             </div>
           )}
         </section>
 
         <section className="panel">
           <h2>
-            <Bell size={18} /> Obecné
+            <Bell size={18} /> {t("Obecné")}
           </h2>
+          <div className="field">
+            <label htmlFor="s-lang">{t("Jazyk upozornění")}</label>
+            <select id="s-lang" className="input" value={form.language} onChange={(e) => set("language", e.target.value as AppSettings["language"])}>
+              <option value="cs">Čeština</option>
+              <option value="en">English</option>
+            </select>
+            <div className="field-hint">{t("Jazyk e-mailů a zpráv na webhook.")}</div>
+          </div>
           <Switch
             checked={form.update_check_enabled}
             onChange={(v) => set("update_check_enabled", v)}
-            label="Automaticky kontrolovat aktualizace"
-            description="Elenvar jednou za 6 hodin zjistí, zda je k dispozici nová verze, a upozorní na ni."
+            label={t("Automaticky kontrolovat aktualizace")}
+            description={t("Elenvar jednou za 6 hodin zjistí, zda je k dispozici nová verze, a upozorní na ni.")}
           />
           <Switch
             checked={form.update_include_prereleases}
             onChange={(v) => set("update_include_prereleases", v)}
-            label="Nabízet i předběžné verze"
-            description="Testovací verze s novinkami dřív, ale s vyšším rizikem chyb."
+            label={t("Nabízet i předběžné verze")}
+            description={t("Testovací verze s novinkami dřív, ale s vyšším rizikem chyb.")}
           />
-          <Switch checked={form.notify_recoveries} onChange={(v) => set("notify_recoveries", v)} label="Upozorňovat i na obnovení provozu" description="Zpráva, když se zařízení nebo kamera opět rozjede." />
+          <Switch checked={form.notify_recoveries} onChange={(v) => set("notify_recoveries", v)} label={t("Upozorňovat i na obnovení provozu")} description={t("Zpráva, když se zařízení nebo kamera opět rozjede.")} />
           <div className="btn-row">
             <button type="button" className="btn btn-ghost" onClick={() => void testNotification()} disabled={testing}>
-              {testing ? <Spinner size={16} /> : <Send size={16} />} Odeslat testovací upozornění
+              {testing ? <Spinner size={16} /> : <Send size={16} />} {t("Odeslat testovací upozornění")}
             </button>
-            <span className="muted small">Nejprve uložte změny nastavení.</span>
+            <span className="muted small">{t("Nejprve uložte změny nastavení.")}</span>
           </div>
         </section>
       </form>

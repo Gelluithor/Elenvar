@@ -6,6 +6,7 @@ import { StreamPlayer } from "../components/StreamPlayer";
 import { Alert, EmptyState, PageLoader, Segmented, StatusDot, usePolling } from "../components/ui";
 import { api, errorMessage } from "../lib/api";
 import type { Camera } from "../types";
+import { t } from "../lib/i18n";
 
 type Quality = "auto" | "main" | "sub";
 const LAYOUTS = [1, 4, 9, 16] as const;
@@ -163,10 +164,10 @@ export function LivePage() {
       <aside className="live-sidebar">
         <div className="search">
           <Search size={16} aria-hidden />
-          <input className="input" placeholder="Hledat kameru…" value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Hledat kameru" />
+          <input className="input" placeholder={t("Hledat kameru…")} value={filter} onChange={(e) => setFilter(e.target.value)} aria-label={t("Hledat kameru")} />
         </div>
         <div className="camera-list">
-          {groups.length === 0 && <p className="muted small">Žádné kamery.</p>}
+          {groups.length === 0 && <p className="muted small">{t("Žádné kamery.")}</p>}
           {groups.map((list) => (
             <div key={list[0].nvr_id} className="camera-group">
               <div className="camera-group-title">{list[0].nvr_name}</div>
@@ -178,7 +179,7 @@ export function LivePage() {
                   draggable
                   onDragStart={(e) => e.dataTransfer.setData("text/x-elenvar-camera", String(cam.id))}
                   onClick={() => assign(cam.id)}
-                  title="Kliknutím přidáte do vybraného nebo prvního volného okna, případně přetáhněte"
+                  title={t("Kliknutím přidáte do vybraného nebo prvního volného okna, případně přetáhněte")}
                 >
                   <StatusDot state={cam.state} />
                   <span className="camera-item-name">{cam.name}</span>
@@ -194,12 +195,12 @@ export function LivePage() {
       <section className="live-main">
         <div className="live-toolbar">
           <Segmented
-            label="Rozložení"
+            label={t("Rozložení")}
             value={maximized === null ? state.layout : null}
             onChange={(l) => setLayout(l)}
             options={LAYOUTS.map((l) => ({
               value: l,
-              title: `${l} ${l === 1 ? "okno" : l === 4 ? "okna" : "oken"}`,
+              title: l === 1 ? t("1 okno") : l === 4 ? t("{count} okna", { count: l }) : t("{count} oken", { count: l }),
               label: (
                 <>
                   {LAYOUT_ICON[l]}
@@ -209,24 +210,24 @@ export function LivePage() {
             }))}
           />
           <Segmented<Quality>
-            label="Kvalita"
+            label={t("Kvalita")}
             value={state.quality}
             onChange={(q) => setState((s) => ({ ...s, quality: q }))}
             options={[
-              { value: "auto", label: "Auto" },
-              { value: "sub", label: "Nízká" },
-              { value: "main", label: "Vysoká" },
+              { value: "auto", label: t("Auto") },
+              { value: "sub", label: t("Nízká") },
+              { value: "main", label: t("Vysoká") },
             ]}
           />
           <span className="toolbar-spacer" />
           <button type="button" className="btn btn-ghost btn-small" onClick={() => setState((s) => ({ ...s, slots: [] }))}>
-            <Eraser size={15} /> Vyprázdnit
+            <Eraser size={15} /> {t("Vyprázdnit")}
           </button>
         </div>
 
         {cameras.length === 0 ? (
-          <EmptyState icon={<VideoOff size={28} />} title="Žádné kamery">
-            Kamery se zobrazí po přidání a prvním načtení zařízení.
+          <EmptyState icon={<VideoOff size={28} />} title={t("Žádné kamery")}>
+            {t("Kamery se zobrazí po přidání a prvním načtení zařízení.")}
           </EmptyState>
         ) : (
           <div className="video-grid" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
@@ -254,13 +255,13 @@ export function LivePage() {
                         <span className="tile-title">{cam.name}</span>
                         <span className="tile-sub">{cam.nvr_name}</span>
                         <span className="toolbar-spacer" />
-                        <button type="button" className="icon-btn" title={maximized === slot ? "Zpět do mřížky" : "Zvětšit"} onClick={(e) => { e.stopPropagation(); setMaximized(maximized === slot ? null : slot); }}>
+                        <button type="button" className="icon-btn" title={maximized === slot ? t("Zpět do mřížky") : t("Zvětšit")} onClick={(e) => { e.stopPropagation(); setMaximized(maximized === slot ? null : slot); }}>
                           {maximized === slot ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
                         </button>
-                        <button type="button" className="icon-btn" title="Celá obrazovka" onClick={(e) => { e.stopPropagation(); fullscreen(slot); }}>
+                        <button type="button" className="icon-btn" title={t("Celá obrazovka")} onClick={(e) => { e.stopPropagation(); fullscreen(slot); }}>
                           <Expand size={15} />
                         </button>
-                        <button type="button" className="icon-btn" title="Odebrat" onClick={(e) => { e.stopPropagation(); clearSlot(slot); }}>
+                        <button type="button" className="icon-btn" title={t("Odebrat")} onClick={(e) => { e.stopPropagation(); clearSlot(slot); }}>
                           <X size={15} />
                         </button>
                       </div>
@@ -268,7 +269,7 @@ export function LivePage() {
                   ) : (
                     <div className="tile-empty">
                       <Plus size={22} />
-                      <span>{selected === slot ? "Vyberte kameru vlevo" : "Klikněte a vyberte kameru, nebo ji sem přetáhněte"}</span>
+                      <span>{selected === slot ? t("Vyberte kameru vlevo") : t("Klikněte a vyberte kameru, nebo ji sem přetáhněte")}</span>
                     </div>
                   )}
                 </div>

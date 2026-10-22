@@ -7,9 +7,13 @@ import re
 import secrets
 from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import parse_qs
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from sqlalchemy import func, select
 from starlette.datastructures import Headers, MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
@@ -29,6 +33,7 @@ from . import go2rtc  # noqa: E402
 from .db import SessionLocal, init_db  # noqa: E402
 from .deps import SAFE_METHODS, origin_allowed  # noqa: E402
 from .hikvision import close_clients  # noqa: E402
+from .i18n import language_from_headers, set_language, tr  # noqa: E402
 from .models import User  # noqa: E402
 from .monitor import monitor  # noqa: E402
 from .routers import admin, auth, cameras, events, nvrs, playback, system, users  # noqa: E402
@@ -52,7 +57,7 @@ async def bootstrap_admin() -> None:
         db.add(
             User(
                 username=username,
-                full_name="Administrátor",
+                full_name="Administrator",
                 role="admin",
                 password_hash=hash_password(password),
                 must_change_password=must_change,
@@ -61,12 +66,12 @@ async def bootstrap_admin() -> None:
         await db.commit()
     if generated:
         log.warning(
-            "\n%s\n  Vytvořen účet administrátora\n  Uživatel: %s\n  Heslo:    %s\n"
-            "  Po přihlášení budete vyzváni ke změně hesla a nastavení 2FA.\n%s",
+            "\n%s\n  Administrator account created\n  Username: %s\n  Password: %s\n"
+            "  You will be asked to change the password and set up 2FA after signing in.\n%s",
             "=" * 60, username, password, "=" * 60,
         )
     else:
-        log.warning("Vytvořen účet administrátora '%s' (heslo z ELENVAR_ADMIN_PASSWORD).", username)
+        log.warning("Administrator account '%s' created (password from ELENVAR_ADMIN_PASSWORD).", username)
 
 
 @asynccontextmanager
@@ -76,7 +81,7 @@ async def lifespan(_: FastAPI):
     # Uklidit případné streamy přehrávání po předchozím běhu.
     await go2rtc.delete_streams_with_prefix("pb_")
     monitor.start()
-    log.info("Elenvar %s spuštěn", VERSION)
+    log.info("Elenvar %s started", VERSION)
     try:
         yield
     finally:
@@ -92,13 +97,18 @@ class SecurityMiddleware:
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "websocket":
+            # Prohlížeč neumí u WebSocketu poslat vlastní hlavičku – jazyk jde v parametru.
+            query = parse_qs(scope.get("query_string", b"").decode("latin-1"))
+            set_language((query.get("lang") or [""])[0] or language_from_headers(Headers(scope=scope)))
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
         headers = Headers(scope=scope)
+        set_language(language_from_headers(headers))
         path: str = scope["path"]
         if scope["method"] not in SAFE_METHODS and path.startswith("/api/") and not origin_allowed(headers):
-            response = JSONResponse({"detail": "Požadavek z cizího původu byl odmítnut."}, status_code=403)
+            response = JSONResponse({"detail": tr("Požadavek z cizího původu byl odmítnut.")}, status_code=403)
             await response(scope, receive, send)
             return
 
@@ -136,6 +146,22 @@ for module in (auth, users, nvrs, cameras, playback, events, admin, system):
     app.include_router(module.router)
 
 
+@app.exception_handler(StarletteHTTPException)
+async def translated_http_error(_: Request, exc: StarletteHTTPException):
+    detail = tr(exc.detail) if isinstance(exc.detail, str) else exc.detail
+    return JSONResponse({"detail": detail}, status_code=exc.status_code, headers=getattr(exc, "headers", None))
+
+
+@app.exception_handler(RequestValidationError)
+async def translated_validation_error(_: Request, exc: RequestValidationError):
+    errors = jsonable_encoder(exc.errors())
+    for error in errors:
+        msg = error.get("msg", "")
+        if isinstance(msg, str) and msg.startswith("Value error, "):
+            error["msg"] = "Value error, " + tr(msg[len("Value error, "):])
+    return JSONResponse({"detail": errors}, status_code=422)
+
+
 @app.get("/api/health", include_in_schema=False)
 async def health():
     return {"status": "ok", "version": VERSION}
@@ -162,5 +188,5 @@ async def spa(full_path: str):
             )
             return FileResponse(candidate, headers={"Cache-Control": cache})
     if not INDEX_FILE.is_file():
-        return JSONResponse({"detail": "Frontend není sestaven."}, status_code=503)
+        return JSONResponse({"detail": tr("Frontend není sestaven.")}, status_code=503)
     return FileResponse(INDEX_FILE, headers={"Cache-Control": "no-cache"})

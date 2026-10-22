@@ -12,6 +12,7 @@ import {
 import { CircleAlert, CircleCheck, Info, LoaderCircle, TriangleAlert, X } from "lucide-react";
 import type { CameraState, NvrStatus, Severity } from "../types";
 import { Logo } from "./Logo";
+import { N_, t } from "../lib/i18n";
 
 /* --- Spinner / prázdný stav / hlavička stránky ------------------------------ */
 
@@ -19,7 +20,7 @@ export function Spinner({ size = 18, label }: { size?: number; label?: string })
   return (
     <span className="spinner" role="status" aria-live="polite">
       <LoaderCircle size={size} className="spin" aria-hidden />
-      {label ? <span>{label}</span> : <span className="sr-only">Načítání…</span>}
+      {label ? <span>{label}</span> : <span className="sr-only">{t("Načítání…")}</span>}
     </span>
   );
 }
@@ -28,7 +29,7 @@ export function PageLoader() {
   return (
     <div className="page-loader" role="status" aria-live="polite">
       <Logo size={44} animated className="logo-loading" />
-      <span className="sr-only">Načítání…</span>
+      <span className="sr-only">{t("Načítání…")}</span>
     </div>
   );
 }
@@ -68,29 +69,29 @@ export function Alert({ kind = "error", children }: { kind?: "error" | "warning"
 /* --- Stavové štítky ---------------------------------------------------------- */
 
 const NVR_STATUS: Record<NvrStatus, { label: string; tone: string }> = {
-  online: { label: "Online", tone: "ok" },
-  offline: { label: "Nedostupné", tone: "bad" },
-  error: { label: "Chyba", tone: "bad" },
-  auth_error: { label: "Chybné přihlášení", tone: "bad" },
-  unknown: { label: "Zjišťuje se", tone: "muted" },
-  disabled: { label: "Vypnuto", tone: "muted" },
+  online: { label: N_("Online"), tone: "ok" },
+  offline: { label: N_("Nedostupné"), tone: "bad" },
+  error: { label: N_("Chyba"), tone: "bad" },
+  auth_error: { label: N_("Chybné přihlášení"), tone: "bad" },
+  unknown: { label: N_("Zjišťuje se"), tone: "muted" },
+  disabled: { label: N_("Vypnuto"), tone: "muted" },
 };
 
 export function NvrStatusPill({ status }: { status: NvrStatus }) {
   const s = NVR_STATUS[status] ?? NVR_STATUS.unknown;
-  return <span className={`pill pill-${s.tone}`}>{s.label}</span>;
+  return <span className={`pill pill-${s.tone}`}>{t(s.label)}</span>;
 }
 
 const CAMERA_STATE: Record<CameraState, { label: string; tone: string }> = {
-  online: { label: "Online", tone: "ok" },
-  offline: { label: "Offline", tone: "bad" },
-  unknown: { label: "Neznámý", tone: "muted" },
-  nvr_down: { label: "NVR nedostupné", tone: "warn" },
+  online: { label: N_("Online"), tone: "ok" },
+  offline: { label: N_("Offline"), tone: "bad" },
+  unknown: { label: N_("Neznámý"), tone: "muted" },
+  nvr_down: { label: N_("NVR nedostupné"), tone: "warn" },
 };
 
 export function CameraStatePill({ state }: { state: CameraState }) {
   const s = CAMERA_STATE[state] ?? CAMERA_STATE.unknown;
-  return <span className={`pill pill-${s.tone}`}>{s.label}</span>;
+  return <span className={`pill pill-${s.tone}`}>{t(s.label)}</span>;
 }
 
 export function StatusDot({ state }: { state: CameraState | "ok" | "bad" | "warn" | "muted" }) {
@@ -99,14 +100,14 @@ export function StatusDot({ state }: { state: CameraState | "ok" | "bad" | "warn
 }
 
 const SEVERITY: Record<Severity, { label: string; tone: string }> = {
-  critical: { label: "Kritické", tone: "bad" },
-  warning: { label: "Varování", tone: "warn" },
-  info: { label: "Info", tone: "info" },
+  critical: { label: N_("Kritické"), tone: "bad" },
+  warning: { label: N_("Varování"), tone: "warn" },
+  info: { label: N_("Info"), tone: "info" },
 };
 
 export function SeverityPill({ severity }: { severity: Severity }) {
   const s = SEVERITY[severity];
-  return <span className={`pill pill-${s.tone}`}>{s.label}</span>;
+  return <span className={`pill pill-${s.tone}`}>{t(s.label)}</span>;
 }
 
 /* --- Formulářové prvky ------------------------------------------------------- */
@@ -262,7 +263,7 @@ export function Modal({
       >
         <div className="modal-header">
           <h2 id={titleId}>{title}</h2>
-          <button type="button" className="icon-btn modal-close" onClick={onClose} aria-label="Zavřít">
+          <button type="button" className="icon-btn modal-close" onClick={onClose} aria-label={t("Zavřít")}>
             <X size={18} />
           </button>
         </div>
@@ -276,7 +277,7 @@ export function Modal({
 export function ConfirmDialog({
   title,
   message,
-  confirmLabel = "Potvrdit",
+  confirmLabel = t("Potvrdit"),
   danger,
   onConfirm,
   onClose,
@@ -297,7 +298,7 @@ export function ConfirmDialog({
       await onConfirm();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Akce selhala.");
+      setError(err instanceof Error ? err.message : t("Akce selhala."));
       setBusy(false);
     }
   };
@@ -308,7 +309,7 @@ export function ConfirmDialog({
       footer={
         <>
           <button type="button" className="btn btn-ghost" onClick={onClose} disabled={busy}>
-            Zrušit
+            {t("Zrušit")}
           </button>
           <button type="button" className={`btn ${danger ? "btn-danger" : "btn-primary"}`} onClick={run} disabled={busy}>
             {busy ? <Spinner size={16} /> : null}
@@ -346,15 +347,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={push}>
       {children}
       <div className="toasts" aria-live="polite">
-        {toasts.map((t) => (
-          <div key={t.id} className={`toast toast-${t.kind}`}>
-            {t.kind === "error" ? <CircleAlert size={18} /> : t.kind === "success" ? <CircleCheck size={18} /> : <Info size={18} />}
-            <span>{t.message}</span>
+        {toasts.map((item) => (
+          <div key={item.id} className={`toast toast-${item.kind}`}>
+            {item.kind === "error" ? <CircleAlert size={18} /> : item.kind === "success" ? <CircleCheck size={18} /> : <Info size={18} />}
+            <span>{item.message}</span>
             <button
               type="button"
               className="icon-btn"
-              aria-label="Zavřít"
-              onClick={() => setToasts((list) => list.filter((x) => x.id !== t.id))}
+              aria-label={t("Zavřít")}
+              onClick={() => setToasts((list) => list.filter((x) => x.id !== item.id))}
             >
               <X size={14} />
             </button>

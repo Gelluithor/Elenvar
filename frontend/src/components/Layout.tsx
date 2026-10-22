@@ -21,8 +21,10 @@ import { api } from "../lib/api";
 import { hasRole, ROLE_LABELS } from "../lib/format";
 import { applyTheme } from "../lib/theme";
 import type { Dashboard, Role } from "../types";
+import { LanguageToggle } from "./LanguageSwitch";
 import { Logo } from "./Logo";
 import { usePolling } from "./ui";
+import { N_, t } from "../lib/i18n";
 
 interface NavItem {
   to: string;
@@ -34,19 +36,19 @@ interface NavItem {
 }
 
 const SECTIONS = [
-  { id: "watch", label: "Sledování" },
-  { id: "manage", label: "Správa" },
+  { id: "watch", label: N_("Sledování") },
+  { id: "manage", label: N_("Správa") },
 ] as const;
 
 const NAV: NavItem[] = [
-  { to: "/", label: "Přehled", icon: <LayoutDashboard size={17} />, role: "viewer", section: "watch" },
-  { to: "/live", label: "Živý obraz", icon: <Video size={17} />, role: "viewer", section: "watch" },
-  { to: "/playback", label: "Záznamy", icon: <Film size={17} />, role: "operator", section: "watch" },
-  { to: "/monitoring", label: "Monitoring", icon: <Activity size={17} />, role: "viewer", section: "watch", badge: "problems" },
-  { to: "/devices", label: "Zařízení", icon: <Server size={17} />, role: "viewer", section: "manage" },
-  { to: "/users", label: "Uživatelé", icon: <Users size={17} />, role: "admin", section: "manage" },
-  { to: "/audit", label: "Audit", icon: <ScrollText size={17} />, role: "admin", section: "manage" },
-  { to: "/settings", label: "Nastavení", icon: <Settings size={17} />, role: "admin", section: "manage", badge: "update" },
+  { to: "/", label: N_("Přehled"), icon: <LayoutDashboard size={17} />, role: "viewer", section: "watch" },
+  { to: "/live", label: N_("Živý obraz"), icon: <Video size={17} />, role: "viewer", section: "watch" },
+  { to: "/playback", label: N_("Záznamy"), icon: <Film size={17} />, role: "operator", section: "watch" },
+  { to: "/monitoring", label: N_("Monitoring"), icon: <Activity size={17} />, role: "viewer", section: "watch", badge: "problems" },
+  { to: "/devices", label: N_("Zařízení"), icon: <Server size={17} />, role: "viewer", section: "manage" },
+  { to: "/users", label: N_("Uživatelé"), icon: <Users size={17} />, role: "admin", section: "manage" },
+  { to: "/audit", label: N_("Audit"), icon: <ScrollText size={17} />, role: "admin", section: "manage" },
+  { to: "/settings", label: N_("Nastavení"), icon: <Settings size={17} />, role: "admin", section: "manage", badge: "update" },
 ];
 
 type Theme = "dark" | "light";
@@ -111,26 +113,26 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className={`shell${open ? " nav-open" : ""}`}>
       <header className="mobile-bar">
-        <button type="button" className="icon-btn" onClick={() => setOpen(true)} aria-label="Otevřít menu">
+        <button type="button" className="icon-btn" onClick={() => setOpen(true)} aria-label={t("Otevřít menu")}>
           <Menu size={20} />
         </button>
         <div className="brand-inline">
           <Logo size={26} />
-          <span>Elenvar</span>
+          <span>{t("Elenvar")}</span>
         </div>
         <span className="mobile-bar-spacer" />
       </header>
 
-      <aside className="sidebar" aria-label="Hlavní navigace">
+      <aside className="sidebar" aria-label={t("Hlavní navigace")}>
         <div className="sidebar-top">
           <div className="brand">
             <Logo size={34} />
             <div>
-              <strong>Elenvar</strong>
-              <small>Správa kamerových systémů</small>
+              <strong>{t("Elenvar")}</strong>
+              <small>{t("Správa kamerových systémů")}</small>
             </div>
           </div>
-          <button type="button" className="icon-btn sidebar-close" onClick={() => setOpen(false)} aria-label="Zavřít menu">
+          <button type="button" className="icon-btn sidebar-close" onClick={() => setOpen(false)} aria-label={t("Zavřít menu")}>
             <X size={20} />
           </button>
         </div>
@@ -140,13 +142,13 @@ export function Layout({ children }: { children: ReactNode }) {
             if (items.length === 0) return null;
             return (
               <div key={section.id} className="nav-group">
-                <div className="nav-section">{section.label}</div>
+                <div className="nav-section">{t(section.label)}</div>
                 {items.map((item) => (
                   <NavLink key={item.to} to={item.to} end={item.to === "/"} className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
                     {item.icon}
-                    <span>{item.label}</span>
+                    <span>{t(item.label)}</span>
                     {item.badge === "problems" && problems > 0 && <span className="nav-badge">{problems}</span>}
-                    {item.badge === "update" && updateAvailable && <span className="nav-badge-dot" title="K dispozici je aktualizace" />}
+                    {item.badge === "update" && updateAvailable && <span className="nav-badge-dot" title={t("K dispozici je aktualizace")} />}
                   </NavLink>
                 ))}
               </div>
@@ -160,14 +162,15 @@ export function Layout({ children }: { children: ReactNode }) {
             </span>
             <span className="user-meta">
               <strong>{user?.full_name || user?.username}</strong>
-              <small>{role ? ROLE_LABELS[role] : ""}</small>
+              <small>{role ? t(ROLE_LABELS[role]) : ""}</small>
             </span>
           </NavLink>
           <div className="sidebar-actions">
-            <button type="button" className="icon-btn" onClick={toggleTheme} aria-label="Přepnout motiv" title="Přepnout světlý/tmavý motiv">
+            <LanguageToggle />
+            <button type="button" className="icon-btn" onClick={toggleTheme} aria-label={t("Přepnout motiv")} title={t("Přepnout světlý/tmavý motiv")}>
               {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
             </button>
-            <button type="button" className="icon-btn" onClick={() => void logout()} aria-label="Odhlásit" title="Odhlásit">
+            <button type="button" className="icon-btn" onClick={() => void logout()} aria-label={t("Odhlásit")} title={t("Odhlásit")}>
               <LogOut size={18} />
             </button>
           </div>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { RefreshCw, VideoOff } from "lucide-react";
 import { MsePlayer, type PlayerStatus } from "../lib/msePlayer";
 import { Spinner } from "./ui";
+import { t } from "../lib/i18n";
 
 interface Props {
   /** Cesta WebSocketu, např. /api/cameras/3/live?quality=sub */
@@ -77,9 +78,9 @@ export function StreamPlayer({ path, live, autoReconnect = false, onStatus, onTi
       {(status === "error" || status === "ended") && (
         <div className="player-overlay player-error">
           <VideoOff size={26} aria-hidden />
-          <p>{message || "Video není dostupné."}</p>
+          <p>{message || t("Video není dostupné.")}</p>
           {retrying ? (
-            <small>Opakuji připojení…</small>
+            <small>{t("Opakuji připojení…")}</small>
           ) : (
             <button
               type="button"
@@ -89,7 +90,7 @@ export function StreamPlayer({ path, live, autoReconnect = false, onStatus, onTi
                 setAttempt((a) => a + 1);
               }}
             >
-              <RefreshCw size={14} /> Zkusit znovu
+              <RefreshCw size={14} /> {t("Zkusit znovu")}
             </button>
           )}
         </div>

@@ -962,6 +962,23 @@ select.input {
 .sidebar-actions {
   display: flex;
 }
+.lang-toggle {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.lang-links {
+  display: flex;
+  gap: 14px;
+}
+.lang-links .link-btn {
+  font-size: 13px;
+  color: var(--label-2);
+}
+.lang-links .link-btn.active {
+  color: var(--label);
+  font-weight: 600;
+}
 .content {
   flex: 1;
   min-width: 0;

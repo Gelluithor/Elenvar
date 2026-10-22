@@ -6,6 +6,7 @@ import { Alert, PageHeader, PageLoader, SeverityPill, Spinner, usePolling, useTo
 import { api, errorMessage } from "../lib/api";
 import { formatDateTime, formatRelative, hasRole } from "../lib/format";
 import type { Dashboard, EventItem, Severity } from "../types";
+import { t } from "../lib/i18n";
 
 const PAGE = 100;
 
@@ -87,7 +88,7 @@ export function MonitoringPage() {
   const ackAll = async () => {
     try {
       const res = await api<{ count: number }>("/api/events/ack-all", { method: "POST" });
-      toast(`Potvrzeno ${res.count} událostí.`);
+      toast(t("Potvrzeno {count} událostí.", { count: res.count }));
       void load();
     } catch (err) {
       toast(errorMessage(err), "error");
@@ -99,12 +100,12 @@ export function MonitoringPage() {
   return (
     <div className="page">
       <PageHeader
-        title="Monitoring"
-        subtitle={`Sledováno ${dashboard.monitored_total} kamer na ${dashboard.nvr_total} zařízeních`}
+        title={t("Monitoring")}
+        subtitle={t("Sledováno {monitored_total} kamer na {nvr_total} zařízeních", { monitored_total: dashboard.monitored_total, nvr_total: dashboard.nvr_total })}
         actions={
           canAck && dashboard.unacknowledged_events > 0 ? (
             <button type="button" className="btn btn-ghost" onClick={() => void ackAll()}>
-              <CheckCheck size={16} /> Potvrdit vše ({dashboard.unacknowledged_events})
+              <CheckCheck size={16} /> {t("Potvrdit vše (")}{dashboard.unacknowledged_events})
             </button>
           ) : null
         }
@@ -113,14 +114,14 @@ export function MonitoringPage() {
 
       <section className="panel">
         <div className="panel-header">
-          <h2>Aktuální problémy</h2>
+          <h2>{t("Aktuální problémy")}</h2>
         </div>
         {dashboard.problems.length === 0 ? (
           <div className="all-good">
             <CircleCheck size={22} />
             <div>
-              <strong>Bez problémů</strong>
-              <span>Všechna zařízení a sledované kamery fungují.</span>
+              <strong>{t("Bez problémů")}</strong>
+              <span>{t("Všechna zařízení a sledované kamery fungují.")}</span>
             </div>
           </div>
         ) : (
@@ -133,7 +134,7 @@ export function MonitoringPage() {
                   </Link>
                   <span>{p.message}</span>
                 </div>
-                {p.since && <span className="problem-since">od {formatDateTime(p.since)}</span>}
+                {p.since && <span className="problem-since">{t("od")} {formatDateTime(p.since)}</span>}
               </li>
             ))}
           </ul>
@@ -142,32 +143,32 @@ export function MonitoringPage() {
 
       <section className="panel">
         <div className="panel-header wrap">
-          <h2>Historie událostí</h2>
+          <h2>{t("Historie událostí")}</h2>
           <div className="filters">
-            <select className="input input-small" value={severity} onChange={(e) => setSeverity(e.target.value as Severity | "")} aria-label="Závažnost">
-              <option value="">Všechny závažnosti</option>
-              <option value="critical">Kritické</option>
-              <option value="warning">Varování</option>
-              <option value="info">Informační</option>
+            <select className="input input-small" value={severity} onChange={(e) => setSeverity(e.target.value as Severity | "")} aria-label={t("Závažnost")}>
+              <option value="">{t("Všechny závažnosti")}</option>
+              <option value="critical">{t("Kritické")}</option>
+              <option value="warning">{t("Varování")}</option>
+              <option value="info">{t("Informační")}</option>
             </select>
             <label className="check">
               <input type="checkbox" checked={unackedOnly} onChange={(e) => setUnackedOnly(e.target.checked)} />
-              <span>Jen nepotvrzené</span>
+              <span>{t("Jen nepotvrzené")}</span>
             </label>
           </div>
         </div>
         {events.length === 0 ? (
-          <p className="muted">Žádné události.</p>
+          <p className="muted">{t("Žádné události.")}</p>
         ) : (
           <div className="table-wrap">
             <table className="table">
               <thead>
                 <tr>
-                  <th>Čas</th>
-                  <th>Závažnost</th>
-                  <th>Zařízení</th>
-                  <th>Popis</th>
-                  <th className="right">Stav</th>
+                  <th>{t("Čas")}</th>
+                  <th>{t("Závažnost")}</th>
+                  <th>{t("Zařízení")}</th>
+                  <th>{t("Popis")}</th>
+                  <th className="right">{t("Stav")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -189,10 +190,10 @@ export function MonitoringPage() {
                         </span>
                       ) : canAck ? (
                         <button type="button" className="btn btn-ghost btn-small" onClick={() => void ack(e.id)}>
-                          Potvrdit
+                          {t("Potvrdit")}
                         </button>
                       ) : (
-                        <span className="muted small">Nepotvrzeno</span>
+                        <span className="muted small">{t("Nepotvrzeno")}</span>
                       )}
                     </td>
                   </tr>
@@ -204,7 +205,7 @@ export function MonitoringPage() {
         {hasMore && (
           <div className="center">
             <button type="button" className="btn btn-ghost" onClick={() => void loadMore()} disabled={loadingMore}>
-              {loadingMore ? <Spinner size={16} /> : null} Načíst starší
+              {loadingMore ? <Spinner size={16} /> : null} {t("Načíst starší")}
             </button>
           </div>
         )}

@@ -18,6 +18,7 @@ from ..config import settings
 from ..db import SessionLocal, get_db
 from ..deps import AuthContext, require_operator, ws_authenticate
 from ..hikvision import IsapiError, playback_rtsp_path
+from ..i18n import tr
 from ..models import Camera, Nvr
 from ..nvr_service import client_for, connection_for
 from ..streaming import proxy_stream
@@ -185,7 +186,7 @@ async def playback_stream(websocket: WebSocket, camera_id: int, start: str):
     await websocket.accept()
     if _active_playbacks.get(user_id, 0) >= MAX_PLAYBACKS_PER_USER:
         await websocket.send_json(
-            {"type": "error", "value": f"Najednou lze přehrávat nejvýše {MAX_PLAYBACKS_PER_USER} záznamy."}
+            {"type": "error", "value": tr(f"Najednou lze přehrávat nejvýše {MAX_PLAYBACKS_PER_USER} záznamy.")}
         )
         await websocket.close(code=1008)
         return
@@ -204,7 +205,7 @@ async def playback_stream(websocket: WebSocket, camera_id: int, start: str):
         await go2rtc.ensure_stream(name, source)
     except go2rtc.Go2rtcError as exc:
         await cleanup()
-        await websocket.send_json({"type": "error", "value": str(exc)})
+        await websocket.send_json({"type": "error", "value": tr(str(exc))})
         await websocket.close(code=1011)
         return
     await proxy_stream(websocket, name, ctx.session.id, on_close=cleanup)

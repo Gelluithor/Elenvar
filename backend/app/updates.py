@@ -13,6 +13,7 @@ import httpx
 
 from . import app_settings, notify
 from .db import SessionLocal, utcnow
+from .i18n import tr
 from .models import Event
 from .version import VERSION, is_newer, parse
 
@@ -78,7 +79,7 @@ async def check(notify_new: bool = True) -> dict[str, Any]:
         state["latest"] = latest
         state["error"] = ""
     except (httpx.HTTPError, RuntimeError, ValueError) as exc:
-        log.warning("Kontrola aktualizací selhala: %s", exc)
+        log.warning("Update check failed: %s", exc)
         if isinstance(exc, RuntimeError):
             state["error"] = str(exc)
         elif isinstance(exc, httpx.HTTPError):
@@ -97,9 +98,11 @@ async def check(notify_new: bool = True) -> dict[str, Any]:
         await app_settings.set_many(db, values)
         await db.commit()
     if announce:
+        lang = cfg.get("language", "cs")
         await notify.send(
-            f"[Elenvar] K dispozici je verze {new_version}",
-            f"Nainstalovaná verze: {VERSION}\nNová verze: {new_version}\n{latest.get('url', '') if latest else ''}",
+            tr(f"[Elenvar] K dispozici je verze {new_version}", lang),
+            f"{tr('Nainstalovaná verze', lang)}: {VERSION}\n{tr('Nová verze', lang)}: {new_version}\n"
+            f"{latest.get('url', '') if latest else ''}",
             {"kind": "update_available", "version": new_version},
         )
     return state

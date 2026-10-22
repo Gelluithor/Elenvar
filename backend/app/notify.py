@@ -71,13 +71,13 @@ async def send(subject: str, body: str, payload: dict[str, Any] | None = None) -
             password = decrypt(cfg["smtp_password_enc"]) if cfg["smtp_password_enc"] else ""
             await asyncio.to_thread(_send_email_sync, cfg, password, subject, body)
         except Exception as exc:  # noqa: BLE001 – chyby doručení se jen hlásí
-            log.warning("Odeslání e-mailu selhalo: %s", exc)
+            log.warning("Sending e-mail failed: %s", exc)
             errors.append(f"E-mail: {exc}")
     if cfg["webhook_enabled"] and cfg["webhook_url"]:
         try:
             await _send_webhook(cfg["webhook_url"], subject, body, payload or {})
         except Exception as exc:  # noqa: BLE001
-            log.warning("Odeslání webhooku selhalo: %s", exc)
+            log.warning("Sending webhook failed: %s", exc)
             errors.append(f"Webhook: {exc}")
     return errors
 

@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import app_settings, notify
 from ..audit import add_audit
+from ..i18n import tr
 from ..db import get_db
 from ..deps import AuthContext, require_admin
 from ..models import AuditLog, User, UserSession
@@ -38,6 +39,7 @@ class SettingsIn(BaseModel):
     webhook_enabled: bool | None = None
     webhook_url: str | None = Field(default=None, max_length=2000)
     notify_recoveries: bool | None = None
+    language: Literal["cs", "en"] | None = None
     update_check_enabled: bool | None = None
     update_include_prereleases: bool | None = None
 
@@ -111,12 +113,13 @@ async def test_notification(ctx: AuthContext = Depends(require_admin), db: Async
     cfg = await app_settings.get_all(db)
     if not notify.enabled_channels(cfg):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Není zapnutý žádný kanál upozornění.")
+    lang = cfg.get("language", "cs")
     errors = await notify.send(
-        "[Elenvar] Testovací upozornění",
-        f"Toto je testovací upozornění odeslané uživatelem {ctx.user.username}.",
+        tr("[Elenvar] Testovací upozornění", lang),
+        tr(f"Toto je testovací upozornění odeslané uživatelem {ctx.user.username}.", lang),
         {"severity": "info", "kind": "test"},
     )
-    return {"ok": not errors, "errors": errors}
+    return {"ok": not errors, "errors": [tr(e) for e in errors]}
 
 
 @router.get("/audit")
@@ -145,7 +148,7 @@ async def audit_log(
                 "username": r.username,
                 "ip": r.ip,
                 "action": r.action,
-                "detail": r.detail,
+                "detail": tr(r.detail),
                 "success": r.success,
             }
             for r in rows

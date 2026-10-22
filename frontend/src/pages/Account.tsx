@@ -6,10 +6,11 @@ import { Alert, Modal, PageHeader, Spinner, useToast } from "../components/ui";
 import { api, errorMessage } from "../lib/api";
 import { formatDateTime, formatRelative, ROLE_LABELS } from "../lib/format";
 import type { SessionInfo, User } from "../types";
+import { t } from "../lib/i18n";
 
 function describeAgent(ua: string): string {
-  if (!ua) return "Neznámé zařízení";
-  const browser = /Edg\//.test(ua) ? "Edge" : /Firefox\//.test(ua) ? "Firefox" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "Prohlížeč";
+  if (!ua) return t("Neznámé zařízení");
+  const browser = /Edg\//.test(ua) ? "Edge" : /Firefox\//.test(ua) ? "Firefox" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : t("Prohlížeč");
   const os = /Windows/.test(ua) ? "Windows" : /Android/.test(ua) ? "Android" : /iPhone|iPad/.test(ua) ? "iOS" : /Mac OS X/.test(ua) ? "macOS" : /Linux/.test(ua) ? "Linux" : "";
   return os ? `${browser} · ${os}` : browser;
 }
@@ -53,22 +54,22 @@ function ReauthModal({
       footer={
         <>
           <button type="button" className="btn btn-ghost" onClick={onClose}>
-            Zrušit
+            {t("Zrušit")}
           </button>
           <button type="submit" form="reauth-form" className={`btn ${action === "disable" ? "btn-danger" : "btn-primary"}`} disabled={busy}>
-            {busy ? <Spinner size={16} /> : null} Potvrdit
+            {busy ? <Spinner size={16} /> : null} {t("Potvrdit")}
           </button>
         </>
       }
     >
       <form id="reauth-form" className="form" onSubmit={submit}>
-        <p className="muted">Z bezpečnostních důvodů potvrďte akci heslem a kódem z ověřovací aplikace.</p>
+        <p className="muted">{t("Z bezpečnostních důvodů potvrďte akci heslem a kódem z ověřovací aplikace.")}</p>
         <div className="field">
-          <label htmlFor="ra-pass">Heslo</label>
+          <label htmlFor="ra-pass">{t("Heslo")}</label>
           <input id="ra-pass" className="input" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </div>
         <div className="field">
-          <label htmlFor="ra-code">Kód z aplikace</label>
+          <label htmlFor="ra-code">{t("Kód z aplikace")}</label>
           <input id="ra-code" className="input code-input" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} required maxLength={16} />
         </div>
         {error && <Alert>{error}</Alert>}
@@ -105,7 +106,7 @@ export function AccountPage() {
   const changePassword = async (event: FormEvent) => {
     event.preventDefault();
     if (next !== confirm) {
-      setPwError("Nová hesla se neshodují.");
+      setPwError(t("Nová hesla se neshodují."));
       return;
     }
     setPwBusy(true);
@@ -116,7 +117,7 @@ export function AccountPage() {
       setCurrent("");
       setNext("");
       setConfirm("");
-      toast("Heslo bylo změněno. Ostatní relace byly odhlášeny.");
+      toast(t("Heslo bylo změněno. Ostatní relace byly odhlášeny."));
       void loadSessions();
     } catch (err) {
       setPwError(errorMessage(err));
@@ -128,7 +129,7 @@ export function AccountPage() {
   const revoke = async (id: number) => {
     try {
       await api(`/api/auth/sessions/${id}`, { method: "DELETE" });
-      toast("Relace byla ukončena.");
+      toast(t("Relace byla ukončena."));
       void loadSessions();
     } catch (err) {
       toast(errorMessage(err), "error");
@@ -139,61 +140,61 @@ export function AccountPage() {
 
   return (
     <div className="page">
-      <PageHeader title="Můj účet" subtitle={`${user.full_name || user.username} · ${ROLE_LABELS[user.role]}`} />
+      <PageHeader title={t("Můj účet")} subtitle={`${user.full_name || user.username} · ${t(ROLE_LABELS[user.role])}`} />
 
       <div className="detail-grid">
         <section className="panel">
           <h2>
-            <KeyRound size={18} /> Změna hesla
+            <KeyRound size={18} /> {t("Změna hesla")}
           </h2>
           <form className="form" onSubmit={changePassword}>
             <div className="field">
-              <label htmlFor="a-cur">Současné heslo</label>
+              <label htmlFor="a-cur">{t("Současné heslo")}</label>
               <input id="a-cur" className="input" type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required />
             </div>
             <div className="field">
-              <label htmlFor="a-new">Nové heslo</label>
+              <label htmlFor="a-new">{t("Nové heslo")}</label>
               <input id="a-new" className="input" type="password" autoComplete="new-password" minLength={12} value={next} onChange={(e) => setNext(e.target.value)} required />
-              <div className="field-hint">Alespoň 12 znaků.</div>
+              <div className="field-hint">{t("Alespoň 12 znaků.")}</div>
             </div>
             <div className="field">
-              <label htmlFor="a-conf">Nové heslo znovu</label>
+              <label htmlFor="a-conf">{t("Nové heslo znovu")}</label>
               <input id="a-conf" className="input" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
             </div>
             {pwError && <Alert>{pwError}</Alert>}
             <button type="submit" className="btn btn-primary" disabled={pwBusy}>
-              {pwBusy ? <Spinner size={16} /> : null} Změnit heslo
+              {pwBusy ? <Spinner size={16} /> : null} {t("Změnit heslo")}
             </button>
           </form>
         </section>
 
         <section className="panel">
           <h2>
-            <ShieldCheck size={18} /> Dvoufázové ověření
+            <ShieldCheck size={18} /> {t("Dvoufázové ověření")}
           </h2>
           {user.totp_enabled ? (
             <>
-              <Alert kind="success">Dvoufázové ověření je zapnuté.</Alert>
+              <Alert kind="success">{t("Dvoufázové ověření je zapnuté.")}</Alert>
               <p className="muted">
-                Zbývající záložní kódy: <strong>{recoveryCodesLeft ?? "?"}</strong>
+                {t("Zbývající záložní kódy:")} <strong>{recoveryCodesLeft ?? "?"}</strong>
               </p>
-              {recoveryCodesLeft !== null && recoveryCodesLeft <= 3 && <Alert kind="warning">Dochází vám záložní kódy – vygenerujte si nové.</Alert>}
+              {recoveryCodesLeft !== null && recoveryCodesLeft <= 3 && <Alert kind="warning">{t("Dochází vám záložní kódy – vygenerujte si nové.")}</Alert>}
               <div className="btn-row">
                 <button type="button" className="btn btn-ghost" onClick={() => setReauth("codes")}>
-                  <KeyRound size={16} /> Nové záložní kódy
+                  <KeyRound size={16} /> {t("Nové záložní kódy")}
                 </button>
                 {!require2fa && (
                   <button type="button" className="btn btn-ghost btn-danger-text" onClick={() => setReauth("disable")}>
-                    <ShieldOff size={16} /> Vypnout 2FA
+                    <ShieldOff size={16} /> {t("Vypnout 2FA")}
                   </button>
                 )}
               </div>
             </>
           ) : (
             <>
-              <Alert kind="warning">Dvoufázové ověření není zapnuté. Doporučujeme ho zapnout.</Alert>
+              <Alert kind="warning">{t("Dvoufázové ověření není zapnuté. Doporučujeme ho zapnout.")}</Alert>
               <button type="button" className="btn btn-primary" onClick={() => setEnrolling(true)}>
-                <ShieldCheck size={16} /> Zapnout 2FA
+                <ShieldCheck size={16} /> {t("Zapnout 2FA")}
               </button>
             </>
           )}
@@ -203,7 +204,7 @@ export function AccountPage() {
       <section className="panel">
         <div className="panel-header">
           <h2>
-            <Monitor size={18} /> Aktivní přihlášení
+            <Monitor size={18} /> {t("Aktivní přihlášení")}
           </h2>
         </div>
         {!sessions ? (
@@ -214,14 +215,14 @@ export function AccountPage() {
               <li key={s.id}>
                 <div>
                   <strong>{describeAgent(s.user_agent)}</strong>
-                  {s.current && <span className="pill pill-info ml">toto zařízení</span>}
+                  {s.current && <span className="pill pill-info ml">{t("toto zařízení")}</span>}
                   <div className="muted small">
-                    IP {s.ip || "—"} · přihlášeno {formatDateTime(s.created_at)} · aktivita {formatRelative(s.last_seen_at)}
+                    {t("IP")} {s.ip || "—"} {t("· přihlášeno")} {formatDateTime(s.created_at)} {t("· aktivita")} {formatRelative(s.last_seen_at)}
                   </div>
                 </div>
                 {!s.current && (
                   <button type="button" className="btn btn-ghost btn-small" onClick={() => void revoke(s.id)}>
-                    <LogOut size={14} /> Odhlásit
+                    <LogOut size={14} /> {t("Odhlásit")}
                   </button>
                 )}
               </li>
@@ -231,7 +232,7 @@ export function AccountPage() {
       </section>
 
       {enrolling && !codes && (
-        <Modal title="Zapnout dvoufázové ověření" onClose={() => setEnrolling(false)}>
+        <Modal title={t("Zapnout dvoufázové ověření")} onClose={() => setEnrolling(false)}>
           <TotpSetup
             onEnabled={(result) => {
               setCodes(result.recovery_codes);
@@ -241,7 +242,7 @@ export function AccountPage() {
         </Modal>
       )}
       {codes && (
-        <Modal title="Záložní kódy" onClose={() => undefined}>
+        <Modal title={t("Záložní kódy")} onClose={() => undefined}>
           <RecoveryCodes
             codes={codes}
             onDone={() => {
@@ -254,13 +255,13 @@ export function AccountPage() {
       )}
       {reauth && (
         <ReauthModal
-          title={reauth === "disable" ? "Vypnout dvoufázové ověření" : "Vygenerovat nové záložní kódy"}
+          title={reauth === "disable" ? t("Vypnout dvoufázové ověření") : t("Vygenerovat nové záložní kódy")}
           action={reauth}
           onClose={() => setReauth(null)}
           onDone={(newCodes) => {
             setReauth(null);
             if (newCodes) setCodes(newCodes);
-            else toast("Dvoufázové ověření bylo vypnuto.");
+            else toast(t("Dvoufázové ověření bylo vypnuto."));
             void refresh();
           }}
         />

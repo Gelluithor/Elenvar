@@ -6,6 +6,7 @@ import { Alert, EmptyState, PageHeader, PageLoader, Spinner, useToast } from "..
 import { api, errorMessage } from "../lib/api";
 import { formatClock, formatDuration, parseDeviceTime, RECORD_TYPE_LABELS, todayIso, toDeviceTime } from "../lib/format";
 import type { Camera, Segment } from "../types";
+import { t } from "../lib/i18n";
 
 const DAY_MS = 24 * 3600 * 1000;
 
@@ -84,13 +85,13 @@ export function PlaybackPage() {
   );
 
   const startAt = (when: Date) => {
-    const t = when.getTime();
-    const target = parsed.find((s) => s.endMs > t);
+    const time = when.getTime();
+    const target = parsed.find((s) => s.endMs > time);
     if (!target) {
-      toast("Po zvoleném čase už není žádný záznam.", "info");
+      toast(t("Po zvoleném čase už není žádný záznam."), "info");
       return;
     }
-    const begin = new Date(Math.max(t, target.startMs));
+    const begin = new Date(Math.max(time, target.startMs));
     baseTime.current = null;
     setPosition(begin);
     setPlayStart(toDeviceTime(begin));
@@ -131,13 +132,13 @@ export function PlaybackPage() {
 
   return (
     <div className="page">
-      <PageHeader title="Záznamy" subtitle="Vyhledání a přehrání záznamů z NVR. Časy odpovídají času zařízení." />
+      <PageHeader title={t("Záznamy")} subtitle={t("Vyhledání a přehrání záznamů z NVR. Časy odpovídají času zařízení.")} />
 
       <div className="panel playback-controls">
         <div className="field">
-          <label htmlFor="pb-camera">Kamera</label>
+          <label htmlFor="pb-camera">{t("Kamera")}</label>
           <select id="pb-camera" className="input" value={cameraId ?? ""} onChange={(e) => setCameraId(Number(e.target.value) || null)}>
-            <option value="">— vyberte kameru —</option>
+            <option value="">{t("— vyberte kameru —")}</option>
             {groups.map((list) => (
               <optgroup key={list[0].nvr_id} label={list[0].nvr_name}>
                 {list.map((c) => (
@@ -150,27 +151,27 @@ export function PlaybackPage() {
           </select>
         </div>
         <div className="field">
-          <label htmlFor="pb-date">Datum</label>
+          <label htmlFor="pb-date">{t("Datum")}</label>
           <div className="date-nav">
-            <button type="button" className="icon-btn" onClick={() => setDate((d) => shiftDate(d, -1))} aria-label="Předchozí den">
+            <button type="button" className="icon-btn" onClick={() => setDate((d) => shiftDate(d, -1))} aria-label={t("Předchozí den")}>
               <ChevronLeft size={18} />
             </button>
             <input id="pb-date" type="date" className="input" value={date} max={todayIso()} onChange={(e) => e.target.value && setDate(e.target.value)} />
-            <button type="button" className="icon-btn" onClick={() => setDate((d) => shiftDate(d, 1))} aria-label="Další den" disabled={date >= todayIso()}>
+            <button type="button" className="icon-btn" onClick={() => setDate((d) => shiftDate(d, 1))} aria-label={t("Další den")} disabled={date >= todayIso()}>
               <ChevronRight size={18} />
             </button>
           </div>
         </div>
         <button type="button" className="btn btn-ghost" onClick={() => void search()} disabled={!cameraId || loading}>
-          {loading ? <Spinner size={16} /> : <Search size={16} />} Hledat
+          {loading ? <Spinner size={16} /> : <Search size={16} />} {t("Hledat")}
         </button>
       </div>
 
       {error && <Alert>{error}</Alert>}
 
       {!cameraId ? (
-        <EmptyState icon={<Film size={28} />} title="Vyberte kameru">
-          Po výběru kamery a data se zobrazí časová osa se záznamy.
+        <EmptyState icon={<Film size={28} />} title={t("Vyberte kameru")}>
+          {t("Po výběru kamery a data se zobrazí časová osa se záznamy.")}
         </EmptyState>
       ) : (
         <>
@@ -181,24 +182,24 @@ export function PlaybackPage() {
               ) : (
                 <div className="player player-idle">
                   <Film size={30} />
-                  <span>{segments && segments.length ? "Klikněte na časovou osu pro přehrání" : "Žádný vybraný záznam"}</span>
+                  <span>{segments && segments.length ? t("Klikněte na časovou osu pro přehrání") : t("Žádný vybraný záznam")}</span>
                 </div>
               )}
             </div>
             <div className="playback-bar">
-              <button type="button" className="icon-btn" onClick={() => skip(-30)} title="Zpět o 30 s" disabled={!parsed.length}>
+              <button type="button" className="icon-btn" onClick={() => skip(-30)} title={t("Zpět o 30 s")} disabled={!parsed.length}>
                 <RotateCcw size={18} />
               </button>
               {playStart ? (
-                <button type="button" className="icon-btn icon-btn-lg" onClick={pause} title="Pozastavit">
+                <button type="button" className="icon-btn icon-btn-lg" onClick={pause} title={t("Pozastavit")}>
                   <Pause size={20} />
                 </button>
               ) : (
-                <button type="button" className="icon-btn icon-btn-lg" onClick={resume} title="Přehrát" disabled={!position}>
+                <button type="button" className="icon-btn icon-btn-lg" onClick={resume} title={t("Přehrát")} disabled={!position}>
                   <Play size={20} />
                 </button>
               )}
-              <button type="button" className="icon-btn" onClick={() => skip(30)} title="Vpřed o 30 s" disabled={!parsed.length}>
+              <button type="button" className="icon-btn" onClick={() => skip(30)} title={t("Vpřed o 30 s")} disabled={!parsed.length}>
                 <RotateCw size={18} />
               </button>
               <span className="playback-time">{position ? `${formatClock(position)}` : "--:--:--"}</span>
@@ -239,33 +240,33 @@ export function PlaybackPage() {
               </div>
               <div className="timeline-legend">
                 <span>
-                  <i className="seg-timing" /> Průběžný záznam
+                  <i className="seg-timing" /> {t("Průběžný záznam")}
                 </span>
                 <span>
-                  <i className="seg-event" /> Událost / pohyb
+                  <i className="seg-event" /> {t("Událost / pohyb")}
                 </span>
-                {segments && <span className="muted">Celkem {formatDuration(totalRecorded)} záznamu</span>}
+                {segments && <span className="muted">{t("Celkem")} {formatDuration(totalRecorded)} {t("záznamu")}</span>}
               </div>
             </div>
           </div>
 
           <div className="panel">
             <div className="panel-header">
-              <h2>Nalezené záznamy</h2>
-              {segments && <span className="muted small">{segments.length} úseků</span>}
+              <h2>{t("Nalezené záznamy")}</h2>
+              {segments && <span className="muted small">{segments.length} {t("úseků")}</span>}
             </div>
-            {loading && <Spinner label="Vyhledávám záznamy…" />}
-            {segments && segments.length === 0 && <p className="muted">Pro tento den nebyly nalezeny žádné záznamy.</p>}
+            {loading && <Spinner label={t("Vyhledávám záznamy…")} />}
+            {segments && segments.length === 0 && <p className="muted">{t("Pro tento den nebyly nalezeny žádné záznamy.")}</p>}
             {segments && segments.length > 0 && (
               <div className="table-wrap table-scroll">
                 <table className="table">
                   <thead>
                     <tr>
-                      <th>Začátek</th>
-                      <th>Konec</th>
-                      <th>Délka</th>
-                      <th>Typ</th>
-                      <th className="right">Akce</th>
+                      <th>{t("Začátek")}</th>
+                      <th>{t("Konec")}</th>
+                      <th>{t("Délka")}</th>
+                      <th>{t("Typ")}</th>
+                      <th className="right">{t("Akce")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -274,17 +275,17 @@ export function PlaybackPage() {
                         <td>{formatClock(new Date(s.startMs))}</td>
                         <td>{formatClock(new Date(s.endMs))}</td>
                         <td>{formatDuration((s.endMs - s.startMs) / 1000)}</td>
-                        <td>{RECORD_TYPE_LABELS[s.type] ?? (s.type || "—")}</td>
+                        <td>{RECORD_TYPE_LABELS[s.type] ? t(RECORD_TYPE_LABELS[s.type]) : s.type || "—"}</td>
                         <td className="right nowrap">
                           <button type="button" className="btn btn-ghost btn-small" onClick={() => startAt(new Date(s.startMs))}>
-                            <Play size={14} /> Přehrát
+                            <Play size={14} /> {t("Přehrát")}
                           </button>
                           <a
                             className="btn btn-ghost btn-small"
                             href={`/api/playback/${cameraId}/download?start=${encodeURIComponent(s.start)}&end=${encodeURIComponent(s.end)}`}
                             download
                           >
-                            <Download size={14} /> Stáhnout
+                            <Download size={14} /> {t("Stáhnout")}
                           </a>
                         </td>
                       </tr>

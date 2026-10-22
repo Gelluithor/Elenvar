@@ -14,6 +14,7 @@ from websockets.exceptions import WebSocketException
 
 from . import go2rtc
 from .deps import session_still_valid
+from .i18n import tr
 
 log = logging.getLogger("elenvar.stream")
 
@@ -23,7 +24,7 @@ MAX_CLIENT_MESSAGE = 2048
 
 async def _send_error(websocket: WebSocket, message: str) -> None:
     with contextlib.suppress(Exception):
-        await websocket.send_text(json.dumps({"type": "error", "value": message}))
+        await websocket.send_text(json.dumps({"type": "error", "value": tr(message)}))
 
 
 async def proxy_stream(
@@ -45,7 +46,7 @@ async def proxy_stream(
             )
             upstream = await upstream_cm
         except (OSError, WebSocketException, asyncio.TimeoutError) as exc:
-            log.warning("Nelze se připojit ke go2rtc: %s", exc)
+            log.warning("Cannot connect to go2rtc: %s", exc)
             await _send_error(websocket, "Služba pro video není dostupná.")
             return
 
@@ -89,7 +90,7 @@ async def proxy_stream(
             for task in done:
                 exc = task.exception()
                 if exc is not None and not isinstance(exc, (WebSocketDisconnect, WebSocketException, RuntimeError)):
-                    log.warning("Chyba streamu %s: %r", stream_name, exc)
+                    log.warning("Stream error %s: %r", stream_name, exc)
         finally:
             for task in tasks:
                 task.cancel()

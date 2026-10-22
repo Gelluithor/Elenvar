@@ -20,6 +20,7 @@ import { api, errorMessage } from "../lib/api";
 import { formatBytesMb, formatDateTime, formatRelative, hasRole } from "../lib/format";
 import type { Camera, Nvr, StreamSettings } from "../types";
 import { NvrFormModal } from "./Devices";
+import { t } from "../lib/i18n";
 
 const HEALTHY = new Set(["ok", "idle", "standby", "sleeping", "sleep"]);
 
@@ -37,7 +38,7 @@ function Snapshot({ camera, refreshKey }: { camera: Camera; refreshKey: number }
     <img
       className="thumb"
       src={`/api/cameras/${camera.id}/snapshot?t=${refreshKey}`}
-      alt={`Náhled ${camera.name}`}
+      alt={t("Náhled {name}", { name: camera.name })}
       loading="lazy"
       onError={() => setFailed(true)}
     />
@@ -46,7 +47,7 @@ function Snapshot({ camera, refreshKey }: { camera: Camera; refreshKey: number }
 
 function fpsLabel(value: string | number): string {
   const n = Number(value);
-  if (n === 0) return "Plná snímková frekvence";
+  if (n === 0) return t("Plná snímková frekvence");
   return `${(n / 100).toLocaleString("cs-CZ")} fps`;
 }
 
@@ -101,7 +102,7 @@ function StreamSettingsModal({ nvrId, camera, onClose }: { nvrId: number; camera
         body: changes,
       });
       setData(updated);
-      toast("Nastavení streamu bylo uloženo.");
+      toast(t("Nastavení streamu bylo uloženo."));
       onClose();
     } catch (err) {
       setError(errorMessage(err));
@@ -117,36 +118,36 @@ function StreamSettingsModal({ nvrId, camera, onClose }: { nvrId: number; camera
 
   return (
     <Modal
-      title={`Stream – ${camera.name}`}
+      title={t("Stream – {name}", { name: camera.name })}
       onClose={onClose}
       footer={
         <>
           <button type="button" className="btn btn-ghost" onClick={onClose}>
-            Zrušit
+            {t("Zrušit")}
           </button>
           <button type="submit" form="stream-form" className="btn btn-primary" disabled={busy || !data}>
-            {busy ? <Spinner size={16} /> : null} Uložit do kamery
+            {busy ? <Spinner size={16} /> : null} {t("Uložit do kamery")}
           </button>
         </>
       }
     >
       <Segmented<"main" | "sub">
         full
-        label="Stream"
+        label={t("Stream")}
         value={kind}
         onChange={setKind}
         options={[
-          { value: "sub", label: "Substream (náhledy)" },
-          { value: "main", label: "Hlavní stream (záznam)" },
+          { value: "sub", label: t("Substream (náhledy)") },
+          { value: "main", label: t("Hlavní stream (záznam)") },
         ]}
       />
-      {!data && !error && <Spinner label="Načítám nastavení z kamery…" />}
+      {!data && !error && <Spinner label={t("Načítám nastavení z kamery…")} />}
       {error && <Alert>{error}</Alert>}
       {data && (
         <form id="stream-form" className="form" onSubmit={submit}>
           {has("videoCodecType") && (
             <div className="field">
-              <label htmlFor="st-codec">Kodek</label>
+              <label htmlFor="st-codec">{t("Kodek")}</label>
               <select id="st-codec" className="input" value={form.videoCodecType} onChange={(e) => set("videoCodecType", e.target.value)}>
                 {(options.videoCodecType ?? [form.videoCodecType]).map((o) => (
                   <option key={o} value={o}>
@@ -154,12 +155,12 @@ function StreamSettingsModal({ nvrId, camera, onClose }: { nvrId: number; camera
                   </option>
                 ))}
               </select>
-              <div className="field-hint">Pro přehrávání ve všech prohlížečích doporučujeme H.264 (alespoň u substreamu).</div>
+              <div className="field-hint">{t("Pro přehrávání ve všech prohlížečích doporučujeme H.264 (alespoň u substreamu).")}</div>
             </div>
           )}
           {has("videoResolutionWidth") && has("videoResolutionHeight") && (
             <div className="field">
-              <label htmlFor="st-res">Rozlišení</label>
+              <label htmlFor="st-res">{t("Rozlišení")}</label>
               <select
                 id="st-res"
                 className="input"
@@ -172,7 +173,7 @@ function StreamSettingsModal({ nvrId, camera, onClose }: { nvrId: number; camera
                 {!resolutions.some(([w, h]) => `${w}x${h}` === resolutionValue) && <option value={resolutionValue}>{resolutionValue.replace("x", " × ")}</option>}
                 {resolutions.map(([w, h]) => (
                   <option key={`${w}x${h}`} value={`${w}x${h}`}>
-                    {w} × {h}
+                    {w} {t("×")} {h}
                   </option>
                 ))}
               </select>
@@ -180,7 +181,7 @@ function StreamSettingsModal({ nvrId, camera, onClose }: { nvrId: number; camera
           )}
           {has("maxFrameRate") && (
             <div className="field">
-              <label htmlFor="st-fps">Snímková frekvence</label>
+              <label htmlFor="st-fps">{t("Snímková frekvence")}</label>
               <select id="st-fps" className="input" value={form.maxFrameRate} onChange={(e) => set("maxFrameRate", e.target.value)}>
                 {!(options.maxFrameRate ?? []).includes(form.maxFrameRate) && <option value={form.maxFrameRate}>{fpsLabel(form.maxFrameRate)}</option>}
                 {(options.maxFrameRate ?? []).map((o) => (
@@ -193,11 +194,11 @@ function StreamSettingsModal({ nvrId, camera, onClose }: { nvrId: number; camera
           )}
           {has("videoQualityControlType") && (
             <div className="field">
-              <label htmlFor="st-rc">Řízení datového toku</label>
+              <label htmlFor="st-rc">{t("Řízení datového toku")}</label>
               <select id="st-rc" className="input" value={form.videoQualityControlType} onChange={(e) => set("videoQualityControlType", e.target.value)}>
                 {(options.videoQualityControlType ?? [form.videoQualityControlType]).map((o) => (
                   <option key={o} value={o}>
-                    {o === "CBR" ? "Konstantní (CBR)" : o === "VBR" ? "Proměnný (VBR)" : o}
+                    {o === "CBR" ? t("Konstantní (CBR)") : o === "VBR" ? t("Proměnný (VBR)") : o}
                   </option>
                 ))}
               </select>
@@ -205,23 +206,23 @@ function StreamSettingsModal({ nvrId, camera, onClose }: { nvrId: number; camera
           )}
           {form.videoQualityControlType === "CBR" && has("constantBitRate") && (
             <div className="field">
-              <label htmlFor="st-cbr">Datový tok (kb/s)</label>
+              <label htmlFor="st-cbr">{t("Datový tok (kb/s)")}</label>
               <input id="st-cbr" className="input" type="number" min={data.ranges.constantBitRate?.[0] ?? 16} max={data.ranges.constantBitRate?.[1] ?? 100000} value={form.constantBitRate} onChange={(e) => set("constantBitRate", e.target.value)} />
             </div>
           )}
           {form.videoQualityControlType !== "CBR" && has("vbrUpperCap") && (
             <div className="field">
-              <label htmlFor="st-vbr">Maximální datový tok (kb/s)</label>
+              <label htmlFor="st-vbr">{t("Maximální datový tok (kb/s)")}</label>
               <input id="st-vbr" className="input" type="number" min={data.ranges.vbrUpperCap?.[0] ?? 16} max={data.ranges.vbrUpperCap?.[1] ?? 100000} value={form.vbrUpperCap} onChange={(e) => set("vbrUpperCap", e.target.value)} />
             </div>
           )}
           {has("GovLength") && (
             <div className="field">
-              <label htmlFor="st-gop">Interval I-snímků</label>
+              <label htmlFor="st-gop">{t("Interval I-snímků")}</label>
               <input id="st-gop" className="input" type="number" min={data.ranges.GovLength?.[0] ?? 1} max={data.ranges.GovLength?.[1] ?? 1000} value={form.GovLength} onChange={(e) => set("GovLength", e.target.value)} />
             </div>
           )}
-          <Alert kind="warning">Změna se zapíše přímo do kamery a krátce přeruší její stream i záznam.</Alert>
+          <Alert kind="warning">{t("Změna se zapíše přímo do kamery a krátce přeruší její stream i záznam.")}</Alert>
         </form>
       )}
     </Modal>
@@ -265,7 +266,7 @@ export function DeviceDetailPage() {
       setNvr({ ...(await api<Nvr>(`/api/nvrs/${nvrId}/poll`, { method: "POST" })), cameras: nvr?.cameras });
       await load();
       setSnapKey(Date.now());
-      toast("Stav zařízení byl aktualizován.");
+      toast(t("Stav zařízení byl aktualizován."));
     } catch (err) {
       toast(errorMessage(err), "error");
     } finally {
@@ -288,7 +289,7 @@ export function DeviceDetailPage() {
   return (
     <div className="page">
       <Link to="/devices" className="back-link">
-        <ArrowLeft size={16} /> Zařízení
+        <ArrowLeft size={16} /> {t("Zařízení")}
       </Link>
       <PageHeader
         title={nvr.name}
@@ -302,16 +303,16 @@ export function DeviceDetailPage() {
           isAdmin && (
             <>
               <button type="button" className="btn btn-ghost" onClick={() => void pollNow()} disabled={polling}>
-                {polling ? <Spinner size={16} /> : <RefreshCw size={16} />} Zkontrolovat nyní
+                {polling ? <Spinner size={16} /> : <RefreshCw size={16} />} {t("Zkontrolovat nyní")}
               </button>
               <button type="button" className="btn btn-ghost" onClick={() => setEditing(true)}>
-                <Pencil size={16} /> Upravit
+                <Pencil size={16} /> {t("Upravit")}
               </button>
               <button type="button" className="btn btn-ghost" onClick={() => setConfirm("reboot")} disabled={nvr.status !== "online"}>
-                <Power size={16} /> Restartovat
+                <Power size={16} /> {t("Restartovat")}
               </button>
               <button type="button" className="btn btn-ghost btn-danger-text" onClick={() => setConfirm("delete")}>
-                <Trash2 size={16} /> Smazat
+                <Trash2 size={16} /> {t("Smazat")}
               </button>
             </>
           )
@@ -320,51 +321,51 @@ export function DeviceDetailPage() {
       {error && <Alert>{error}</Alert>}
       {nvr.status === "auth_error" && (
         <Alert>
-          {nvr.status_message} {isAdmin ? "Opravte údaje přes „Upravit“ nebo po opravě na NVR klikněte na „Zkontrolovat nyní“." : ""}
+          {nvr.status_message} {isAdmin ? t("Opravte údaje přes „Upravit“ nebo po opravě na NVR klikněte na „Zkontrolovat nyní“.") : ""}
         </Alert>
       )}
-      {(nvr.status === "offline" || nvr.status === "error") && <Alert>{nvr.status_message || "Zařízení je nedostupné."}</Alert>}
+      {(nvr.status === "offline" || nvr.status === "error") && <Alert>{nvr.status_message || t("Zařízení je nedostupné.")}</Alert>}
 
       <div className="detail-grid">
         <section className="panel">
-          <h2>Informace</h2>
+          <h2>{t("Informace")}</h2>
           <dl className="info-list">
-            <dt>Typ</dt>
+            <dt>{t("Typ")}</dt>
             <dd>{nvr.device_type || "—"}</dd>
-            <dt>Sériové číslo</dt>
+            <dt>{t("Sériové číslo")}</dt>
             <dd className="mono small">{nvr.serial_number || "—"}</dd>
-            <dt>Firmware</dt>
+            <dt>{t("Firmware")}</dt>
             <dd>{nvr.firmware || "—"}</dd>
             {isAdmin && (
               <>
-                <dt>Adresa</dt>
+                <dt>{t("Adresa")}</dt>
                 <dd className="mono small">
-                  {nvr.use_https ? "https" : "http"}://{nvr.host}:{nvr.http_port} · RTSP {nvr.rtsp_port}
+                  {nvr.use_https ? "https" : "http"}://{nvr.host}:{nvr.http_port} {t("· RTSP")} {nvr.rtsp_port}
                 </dd>
-                <dt>MAC</dt>
+                <dt>{t("MAC")}</dt>
                 <dd className="mono small">{nvr.mac_address || "—"}</dd>
               </>
             )}
-            <dt>Čas zařízení</dt>
+            <dt>{t("Čas zařízení")}</dt>
             <dd>
               {nvr.device_time ? formatDateTime(nvr.device_time) : "—"}
               {nvr.time_drift_sec !== null && Math.abs(nvr.time_drift_sec) > 5 && (
-                <span className={Math.abs(nvr.time_drift_sec) > 120 ? "tone-bad-text" : "muted"}> (odchylka {nvr.time_drift_sec} s)</span>
+                <span className={Math.abs(nvr.time_drift_sec) > 120 ? "tone-bad-text" : "muted"}> {t("(odchylka")} {nvr.time_drift_sec} {t("s)")}</span>
               )}
             </dd>
-            <dt>Naposledy dostupné</dt>
+            <dt>{t("Naposledy dostupné")}</dt>
             <dd>{formatRelative(nvr.last_seen_at)}</dd>
-            <dt>Poslední kontrola</dt>
+            <dt>{t("Poslední kontrola")}</dt>
             <dd>{formatRelative(nvr.last_poll_at)}</dd>
             {nvr.transcode && (
               <>
-                <dt>Video</dt>
-                <dd>Převod na H.264 zapnut</dd>
+                <dt>{t("Video")}</dt>
+                <dd>{t("Převod na H.264 zapnut")}</dd>
               </>
             )}
             {isAdmin && nvr.notes && (
               <>
-                <dt>Poznámka</dt>
+                <dt>{t("Poznámka")}</dt>
                 <dd className="prewrap">{nvr.notes}</dd>
               </>
             )}
@@ -372,7 +373,7 @@ export function DeviceDetailPage() {
         </section>
 
         <section className="panel">
-          <h2>Úložiště</h2>
+          <h2>{t("Úložiště")}</h2>
           {nvr.disk_problems.length > 0 && (
             <Alert>
               {nvr.disk_problems.map((p) => (
@@ -381,7 +382,7 @@ export function DeviceDetailPage() {
             </Alert>
           )}
           {nvr.disks.length === 0 ? (
-            <p className="muted">Žádné disky nebyly nalezeny.</p>
+            <p className="muted">{t("Žádné disky nebyly nalezeny.")}</p>
           ) : (
             <ul className="disk-list">
               {nvr.disks.map((d) => {
@@ -395,12 +396,12 @@ export function DeviceDetailPage() {
                       </strong>
                       <span className={`pill ${healthy ? "pill-ok" : "pill-bad"}`}>{d.status || "?"}</span>
                     </div>
-                    <div className="progress" aria-label={`Obsazeno ${used} %`}>
+                    <div className="progress" aria-label={t("Obsazeno {used} %", { used: used })}>
                       <span style={{ width: `${used}%` }} />
                     </div>
                     <div className="muted small">
-                      {formatBytesMb(d.capacity_mb)} celkem · {formatBytesMb(d.free_mb)} volno
-                      {d.free_mb === 0 && healthy ? " (přepisování nejstarších záznamů)" : ""}
+                      {formatBytesMb(d.capacity_mb)} {t("celkem ·")} {formatBytesMb(d.free_mb)} {t("volno")}
+                      {d.free_mb === 0 && healthy ? t(" (přepisování nejstarších záznamů)") : ""}
                     </div>
                   </li>
                 );
@@ -412,21 +413,21 @@ export function DeviceDetailPage() {
 
       <section className="panel">
         <div className="panel-header">
-          <h2>Kamery ({cameras.length})</h2>
-          <span className="muted small">Sledované kamery vyvolají upozornění, když přestanou fungovat.</span>
+          <h2>{t("Kamery (")}{cameras.length})</h2>
+          <span className="muted small">{t("Sledované kamery vyvolají upozornění, když přestanou fungovat.")}</span>
         </div>
         {cameras.length === 0 ? (
-          <p className="muted">Zařízení zatím nehlásí žádné kamery.</p>
+          <p className="muted">{t("Zařízení zatím nehlásí žádné kamery.")}</p>
         ) : (
           <div className="table-wrap">
             <table className="table">
               <thead>
                 <tr>
-                  <th>Náhled</th>
-                  <th>Kamera</th>
-                  <th>Stav</th>
-                  <th>Sledovat</th>
-                  <th className="right">Akce</th>
+                  <th>{t("Náhled")}</th>
+                  <th>{t("Kamera")}</th>
+                  <th>{t("Stav")}</th>
+                  <th>{t("Sledovat")}</th>
+                  <th className="right">{t("Akce")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -438,30 +439,30 @@ export function DeviceDetailPage() {
                     <td>
                       <strong>{c.name}</strong>
                       <div className="muted small">
-                        Kanál {c.channel}
+                        {t("Kanál")} {c.channel}
                         {c.ip_address ? ` · ${c.ip_address}` : ""}
                       </div>
                     </td>
                     <td>
                       <CameraStatePill state={c.state} />
                       {c.detail && c.state !== "online" && <div className="muted small">{c.detail}</div>}
-                      {c.status_changed_at && <div className="muted small">od {formatDateTime(c.status_changed_at)}</div>}
+                      {c.status_changed_at && <div className="muted small">{t("od")} {formatDateTime(c.status_changed_at)}</div>}
                     </td>
                     <td>
-                      <Switch checked={c.monitored} onChange={(v) => void toggleMonitored(c, v)} label={<span className="sr-only">Sledovat {c.name}</span>} disabled={!isAdmin} />
+                      <Switch checked={c.monitored} onChange={(v) => void toggleMonitored(c, v)} label={<span className="sr-only">{t("Sledovat")} {c.name}</span>} disabled={!isAdmin} />
                     </td>
                     <td className="right nowrap">
                       <Link className="btn btn-ghost btn-small" to={`/live?camera=${c.id}`}>
-                        <Video size={14} /> Živě
+                        <Video size={14} /> {t("Živě")}
                       </Link>
                       {canPlayback && (
                         <Link className="btn btn-ghost btn-small" to={`/playback?camera=${c.id}`}>
-                          <Film size={14} /> Záznamy
+                          <Film size={14} /> {t("Záznamy")}
                         </Link>
                       )}
                       {isAdmin && (
                         <button type="button" className="btn btn-ghost btn-small" onClick={() => setStreamCamera(c)} disabled={nvr.status !== "online"}>
-                          <SlidersHorizontal size={14} /> Stream
+                          <SlidersHorizontal size={14} /> {t("Stream")}
                         </button>
                       )}
                     </td>
@@ -479,7 +480,7 @@ export function DeviceDetailPage() {
           onClose={() => setEditing(false)}
           onSaved={() => {
             setEditing(false);
-            toast("Zařízení bylo uloženo.");
+            toast(t("Zařízení bylo uloženo."));
             void load();
             window.setTimeout(() => void load(), 4000);
           }}
@@ -487,27 +488,27 @@ export function DeviceDetailPage() {
       )}
       {confirm === "reboot" && (
         <ConfirmDialog
-          title="Restartovat zařízení?"
-          message={`Zařízení ${nvr.name} se restartuje. Po dobu restartu (obvykle 2–5 minut) nebude nahrávat ani dostupné.`}
-          confirmLabel="Restartovat"
+          title={t("Restartovat zařízení?")}
+          message={t("Zařízení {name} se restartuje. Po dobu restartu (obvykle 2–5 minut) nebude nahrávat ani dostupné.", { name: nvr.name })}
+          confirmLabel={t("Restartovat")}
           danger
           onClose={() => setConfirm(null)}
           onConfirm={async () => {
             await api(`/api/nvrs/${nvrId}/reboot`, { method: "POST" });
-            toast("Příkaz k restartu byl odeslán.");
+            toast(t("Příkaz k restartu byl odeslán."));
           }}
         />
       )}
       {confirm === "delete" && (
         <ConfirmDialog
-          title="Smazat zařízení?"
-          message={`Zařízení ${nvr.name} a jeho kamery budou odebrány z Elenvar. Záznamy na NVR zůstanou zachovány.`}
-          confirmLabel="Smazat"
+          title={t("Smazat zařízení?")}
+          message={t("Zařízení {name} a jeho kamery budou odebrány z Elenvar. Záznamy na NVR zůstanou zachovány.", { name: nvr.name })}
+          confirmLabel={t("Smazat")}
           danger
           onClose={() => setConfirm(null)}
           onConfirm={async () => {
             await api(`/api/nvrs/${nvrId}`, { method: "DELETE" });
-            toast("Zařízení bylo smazáno.");
+            toast(t("Zařízení bylo smazáno."));
             navigate("/devices");
           }}
         />

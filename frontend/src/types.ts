@@ -160,6 +160,7 @@ export interface AppSettings {
   notify_recoveries: boolean;
   update_check_enabled: boolean;
   update_include_prereleases: boolean;
+  language: "cs" | "en";
 }
 
 export interface AuditEntry {

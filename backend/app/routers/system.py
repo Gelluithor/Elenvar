@@ -10,6 +10,7 @@ from .. import app_settings, updates
 from ..audit import add_audit
 from ..db import get_db
 from ..deps import AuthContext, require_admin
+from ..i18n import tr, tr_lines
 from ..security import verify_password
 from ..version import VERSION, is_newer
 
@@ -22,15 +23,22 @@ class InstallIn(BaseModel):
 
 def _view(state: dict, updater: dict | None, updater_error: str) -> dict:
     latest = state.get("latest")
+    if updater is not None:
+        updater = {
+            **updater,
+            "phase": tr(updater.get("phase", "")),
+            "message": tr(updater.get("message", "")),
+            "log": tr_lines(list(updater.get("log", []))),
+        }
     return {
         "current": VERSION,
         "latest": latest,
         "update_available": bool(latest and is_newer(latest["version"])),
         "checked_at": state.get("checked_at"),
-        "error": state.get("error", ""),
+        "error": tr(state.get("error", "")),
         "repo": updates.REPO,
         "updater_available": updater is not None,
-        "updater_error": updater_error,
+        "updater_error": tr(updater_error),
         "updater": updater,
     }
 

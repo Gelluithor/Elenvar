@@ -1,3 +1,5 @@
+import { getLang, N_, t } from "./i18n";
+
 let csrfToken = "";
 let unauthorizedHandler: (() => void) | null = null;
 
@@ -20,15 +22,15 @@ export class ApiError extends Error {
 }
 
 const FIELD_NAMES: Record<string, string> = {
-  username: "Uživatelské jméno",
-  password: "Heslo",
-  host: "Adresa",
-  name: "Název",
+  username: N_("Uživatelské jméno"),
+  password: N_("Heslo"),
+  host: N_("Adresa"),
+  name: N_("Název"),
   http_port: "HTTP port",
   rtsp_port: "RTSP port",
-  webhook_url: "URL webhooku",
-  code: "Kód",
-  new_password: "Nové heslo",
+  webhook_url: N_("URL webhooku"),
+  code: N_("Kód"),
+  new_password: N_("Nové heslo"),
 };
 
 interface ValidationIssue {
@@ -45,13 +47,13 @@ function extractDetail(data: unknown): string | null {
     return (detail as ValidationIssue[])
       .map((issue) => {
         const field = String(issue.loc?.[issue.loc.length - 1] ?? "");
-        const label = FIELD_NAMES[field] ?? field;
+        const label = FIELD_NAMES[field] ? t(FIELD_NAMES[field]) : field;
         const msg = (issue.msg ?? "").replace(/^Value error, /, "");
-        if (issue.type === "string_pattern_mismatch") return `${label}: neplatný formát`;
-        if (issue.type === "string_too_short") return `${label}: hodnota je příliš krátká`;
-        if (issue.type === "string_too_long") return `${label}: hodnota je příliš dlouhá`;
+        if (issue.type === "string_pattern_mismatch") return t("{label}: neplatný formát", { label: label });
+        if (issue.type === "string_too_short") return t("{label}: hodnota je příliš krátká", { label: label });
+        if (issue.type === "string_too_long") return t("{label}: hodnota je příliš dlouhá", { label: label });
         if (issue.type?.startsWith("greater_than") || issue.type?.startsWith("less_than"))
-          return `${label}: hodnota mimo povolený rozsah`;
+          return t("{label}: hodnota mimo povolený rozsah", { label: label });
         return label ? `${label}: ${msg}` : msg;
       })
       .join("; ");
@@ -67,7 +69,7 @@ interface RequestOptions {
 
 export async function api<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const method = options.method ?? "GET";
-  const headers: Record<string, string> = { Accept: "application/json" };
+  const headers: Record<string, string> = { Accept: "application/json", "X-Elenvar-Language": getLang() };
   if (options.body !== undefined) headers["Content-Type"] = "application/json";
   if (method !== "GET" && csrfToken) headers["X-CSRF-Token"] = csrfToken;
 
@@ -83,7 +85,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     });
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") throw err;
-    throw new ApiError(0, "Server není dostupný. Zkontrolujte připojení.");
+    throw new ApiError(0, t("Server není dostupný. Zkontrolujte připojení."));
   }
 
   let data: unknown = null;
@@ -92,7 +94,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     data = await response.json().catch(() => null);
   }
   if (!response.ok) {
-    const message = extractDetail(data) ?? `Požadavek selhal (HTTP ${response.status}).`;
+    const message = extractDetail(data) ?? t("Požadavek selhal (HTTP {status}).", { status: response.status });
     if (response.status === 401 && unauthorizedHandler && !path.startsWith("/api/auth/")) {
       unauthorizedHandler();
     }
@@ -104,5 +106,5 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
 export function errorMessage(err: unknown): string {
   if (err instanceof ApiError) return err.message;
   if (err instanceof Error) return err.message;
-  return "Neznámá chyba.";
+  return t("Neznámá chyba.");
 }
