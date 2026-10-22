@@ -1,0 +1,37 @@
+# Demo se dvěma simulovanými NVR. Spouští se skriptem dev/demo.sh.
+# Aplikace je dostupná jen z tohoto počítače na http://localhost:8080 (bez Caddy/HTTPS).
+services:
+  app:
+    ports:
+      - "127.0.0.1:${ELENVAR_DEMO_PORT:-8080}:8000"
+    environment:
+      ELENVAR_COOKIE_SECURE: "false"
+      ELENVAR_ADMIN_USERNAME: admin
+      ELENVAR_ADMIN_PASSWORD: "Elenvar-Demo-2026"
+
+  caddy:
+    profiles: ["https"]
+
+  mock-areal:
+    build: ./dev/mock-nvr
+    image: elenvar-mock-nvr:dev
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Prague
+      MOCK_DEVICE_NAME: "Areál Brno"
+      MOCK_MODEL: "DS-7608NXI-K2"
+      MOCK_CHANNELS: "Vjezd,Parkoviště,Sklad,Recepce"
+      MOCK_OFFLINE: "3"
+    networks: [backend]
+
+  mock-sklad:
+    build: ./dev/mock-nvr
+    image: elenvar-mock-nvr:dev
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Prague
+      MOCK_DEVICE_NAME: "Sklad Ostrava"
+      MOCK_MODEL: "DS-7616NI-K2"
+      MOCK_CHANNELS: "Rampa,Brána sever,Hala B,Kancelář"
+      MOCK_OFFLINE: ""
+    networks: [backend]

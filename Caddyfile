@@ -1,0 +1,27 @@
+{
+	admin off
+	skip_install_trust
+}
+
+# ELENVAR_DOMAIN: jedna nebo více adres oddělených čárkou, např. "elenvar.firma.cz"
+# nebo "localhost, 192.168.1.20". ELENVAR_TLS: "internal" (vlastní certifikační
+# autorita Caddy) nebo e-mail pro automatický certifikát Let's Encrypt.
+{$ELENVAR_DOMAIN} {
+	tls {$ELENVAR_TLS}
+
+	encode zstd gzip
+
+	reverse_proxy app:8000 {
+		flush_interval -1
+		header_up X-Forwarded-For {remote_host}
+	}
+
+	header {
+		-Server
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

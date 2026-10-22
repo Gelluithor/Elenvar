@@ -1,0 +1,95 @@
+name: elenvar
+
+services:
+  app:
+    build: .
+    image: ${ELENVAR_IMAGE:-ghcr.io/gelluithor/elenvar}:${ELENVAR_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      ELENVAR_GO2RTC_URL: http://go2rtc:1984
+      ELENVAR_UPDATER_URL: http://updater:9000
+      ELENVAR_UPDATE_REPO: ${ELENVAR_UPDATE_REPO:-Gelluithor/Elenvar}
+      TZ: ${TZ:-Europe/Prague}
+    volumes:
+      - elenvar-data:/data
+      - updater-token:/run/elenvar-updater:ro
+    depends_on:
+      - go2rtc
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [backend]
+
+  # Interní převod RTSP -> MSE pro prohlížeč. Není vystaven mimo Docker síť;
+  # přihlašovací údaje ke kamerám drží jen v paměti (tmpfs).
+  go2rtc:
+    image: alexxit/go2rtc:1.9.14
+    restart: unless-stopped
+    command:
+      - go2rtc
+      - -config
+      - '{"api":{"listen":":1984"},"rtsp":{"listen":"127.0.0.1:8554"},"webrtc":{"listen":""},"srtp":{"listen":""},"log":{"level":"warn","format":"text"}}'
+      - -config
+      - /run/go2rtc/dynamic.yaml
+    environment:
+      TZ: ${TZ:-Europe/Prague}
+    tmpfs:
+      - /run/go2rtc:size=2m,mode=0700
+      - /tmp
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [backend]
+
+  # Aktualizace z webového rozhraní. Jediná služba s přístupem k Dockeru: umí jen stáhnout
+  # novější obraz aplikace a restartovat ji. Je dostupná jen v interní síti a chrání ji token.
+  # Kdo aktualizace z webu nechce, může tuto službu odstranit.
+  updater:
+    build: ./updater
+    image: ${ELENVAR_UPDATER_IMAGE:-ghcr.io/gelluithor/elenvar-updater}:${ELENVAR_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - .:/project:ro
+      - updater-token:/run/elenvar-updater
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    cap_add: [CHOWN]
+    security_opt: [no-new-privileges:true]
+    networks: [backend]
+
+  # HTTPS reverzní proxy (jediná služba vystavená ven).
+  caddy:
+    image: caddy:2.11.7-alpine
+    restart: unless-stopped
+    ports:
+      - "${ELENVAR_HTTP_PORT:-80}:80"
+      - "${ELENVAR_HTTPS_PORT:-443}:443"
+    environment:
+      ELENVAR_DOMAIN: ${ELENVAR_DOMAIN:-localhost}
+      ELENVAR_TLS: ${ELENVAR_TLS:-internal}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: [no-new-privileges:true]
+    networks: [backend]
+
+networks:
+  backend:
+
+volumes:
+  elenvar-data:
+  updater-token:
+  caddy-data:
+  caddy-config:

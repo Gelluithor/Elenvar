@@ -1,0 +1,58 @@
+# Sestaví a zveřejní obrazy Elenvar do GitHub Container Registry při vydání nové verze.
+# Postup vydání: zvyšte číslo v souboru VERSION, commitněte a vytvořte na GitHubu
+# Release s tagem v<verze> (např. v1.1.0). Aplikace si nové vydání sama najde.
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ověřit verzi
+        id: meta
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          file="$(tr -d '[:space:]' < VERSION)"
+          if [ "$tag" != "$file" ]; then
+            echo "Tag ${GITHUB_REF_NAME} neodpovídá souboru VERSION (${file})." >&2
+            exit 1
+          fi
+          echo "version=${tag}" >> "$GITHUB_OUTPUT"
+          echo "owner=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Obraz aplikace
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ steps.meta.outputs.owner }}/elenvar:${{ steps.meta.outputs.version }}
+            ${{ !github.event.release.prerelease && format('ghcr.io/{0}/elenvar:latest', steps.meta.outputs.owner) || '' }}
+
+      - name: Obraz updateru
+        uses: docker/build-push-action@v6
+        with:
+          context: ./updater
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ steps.meta.outputs.owner }}/elenvar-updater:${{ steps.meta.outputs.version }}
+            ${{ !github.event.release.prerelease && format('ghcr.io/{0}/elenvar-updater:latest', steps.meta.outputs.owner) || '' }}
