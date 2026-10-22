@@ -6,6 +6,10 @@
 
 <p align="center">Self-hosted central management and monitoring for Hikvision camera systems, running in Docker.</p>
 
+<p align="center">
+  <img src="docs/demo.gif" width="900" alt="Elenvar in action: sign-in, overview, live view from four cameras, an enlarged camera, device detail, recordings timeline, monitoring and settings">
+</p>
+
 ---
 
 ## Features

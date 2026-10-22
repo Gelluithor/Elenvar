@@ -22,6 +22,7 @@ services:
       MOCK_MODEL: "DS-7608NXI-K2"
       MOCK_CHANNELS: "Vjezd,Parkoviště,Sklad,Recepce"
       MOCK_OFFLINE: "3"
+      MOCK_NOISE: "0"
     networks: [backend]
 
   mock-sklad:
@@ -34,4 +35,5 @@ services:
       MOCK_MODEL: "DS-7616NI-K2"
       MOCK_CHANNELS: "Rampa,Brána sever,Hala B,Kancelář"
       MOCK_OFFLINE: ""
+      MOCK_NOISE: "0"
     networks: [backend]

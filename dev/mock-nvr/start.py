@@ -20,11 +20,13 @@ def channels() -> list[str]:
 
 def scene(name: str, w: int, h: int, fps: int, seed: int, label: str = "") -> str:
     fs = max(14, h // 24)
+    # MOCK_NOISE=0: klidná scéna bez šumu a pohybu pozadí (menší záznamy obrazovky, GIF).
+    calm = os.environ.get("MOCK_NOISE", "1") == "0"
     bx = int(w * (0.06 + (seed % 4) * 0.08))
     lamp = int(w * (0.62 + (seed % 3) * 0.1))
     text = f"{name}{label}".replace("'", "")
     parts = [
-        f"gradients=s={w}x{h}:r={fps}:c0=0x1d2836:c1=0x2c394a:c2=0x131b26:n=3:speed=0.003:seed={seed}",
+        f"gradients=s={w}x{h}:r={fps}:c0=0x1d2836:c1=0x2c394a:c2=0x131b26:n=3:speed={0 if calm else 0.003}:seed={seed}",
         f"drawbox=x=0:y={int(h * 0.62)}:w={w}:h={h}:color=0x0e141c@0.75:t=fill",
         f"drawbox=x={bx}:y={int(h * 0.26)}:w={int(w * 0.3)}:h={int(h * 0.36)}:color=0x0b1018@0.95:t=fill",
         f"drawbox=x={bx + int(w * 0.05)}:y={int(h * 0.33)}:w={w // 40}:h={h // 26}:color=0xd9b25c@0.75:t=fill",
@@ -32,8 +34,9 @@ def scene(name: str, w: int, h: int, fps: int, seed: int, label: str = "") -> st
         f"drawbox=x={lamp}:y={int(h * 0.3)}:w={max(2, w // 320)}:h={int(h * 0.32)}:color=0x0b1018:t=fill",
         f"drawbox=x={lamp - w // 60}:y={int(h * 0.28)}:w={w // 30}:h={h // 60 + 2}:color=0xf2deb0@0.8:t=fill",
         f"drawbox=x='mod(t*{w // (10 + seed)}\\,{w + 220})-180':y={int(h * 0.66)}:w={w // 8}:h={h // 12}:color=0xa9b2bd@0.7:t=fill",
-        "noise=alls=9:allf=t",
     ]
+    if not calm:
+        parts.append("noise=alls=9:allf=t")
     # Hodiny jen u živého obrazu – simulátor nezná skutečný čas přehrávaného záznamu.
     if not label:
         parts.append(
