@@ -1,0 +1,28 @@
+# Run behind an existing Traefik instead of the bundled Caddy.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.traefik.yml up -d
+#
+# Values are set in .env (see .env.example, Traefik section) – full guide in the README.
+services:
+  # The bundled HTTPS proxy is not started – Traefik handles ports 80/443.
+  caddy:
+    profiles: ["caddy"]
+
+  app:
+    networks:
+      - backend
+      - traefik
+    labels:
+      - traefik.enable=true
+      # The app is on two networks – Traefik must use its own one.
+      - traefik.docker.network=${ELENVAR_TRAEFIK_NETWORK:-traefik}
+      - traefik.http.routers.elenvar.rule=Host(`${ELENVAR_TRAEFIK_HOST:?Set ELENVAR_TRAEFIK_HOST in .env}`)
+      - traefik.http.routers.elenvar.entrypoints=${ELENVAR_TRAEFIK_ENTRYPOINT:-websecure}
+      - traefik.http.routers.elenvar.tls=true
+      - traefik.http.routers.elenvar.tls.certresolver=${ELENVAR_TRAEFIK_CERTRESOLVER-letsencrypt}
+      - traefik.http.services.elenvar.loadbalancer.server.port=8000
+
+networks:
+  traefik:
+    external: true
+    name: ${ELENVAR_TRAEFIK_NETWORK:-traefik}

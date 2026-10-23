@@ -11,6 +11,8 @@ services:
     environment:
       ELENVAR_GO2RTC_URL: http://go2rtc:1984
       ELENVAR_UPDATER_URL: http://updater:9000
+      # Reverse proxies whose X-Forwarded-For header is trusted (IP or CIDR, comma-separated).
+      FORWARDED_ALLOW_IPS: ${ELENVAR_TRUSTED_PROXIES:-*}
       ELENVAR_UPDATE_REPO: ${ELENVAR_UPDATE_REPO:-Gelluithor/Elenvar}
       TZ: ${TZ:-Europe/Prague}
     volumes:
@@ -25,8 +27,8 @@ services:
     security_opt: [no-new-privileges:true]
     networks: [backend]
 
-  # Interní převod RTSP -> MSE pro prohlížeč. Není vystaven mimo Docker síť;
-  # přihlašovací údaje ke kamerám drží jen v paměti (tmpfs).
+  # Internal RTSP -> MSE conversion for the browser. Not exposed outside the Docker
+  # network; camera credentials are kept in memory only (tmpfs).
   go2rtc:
     image: alexxit/go2rtc:1.9.14
     restart: unless-stopped
@@ -46,9 +48,9 @@ services:
     security_opt: [no-new-privileges:true]
     networks: [backend]
 
-  # Aktualizace z webového rozhraní. Jediná služba s přístupem k Dockeru: umí jen stáhnout
-  # novější obraz aplikace a restartovat ji. Je dostupná jen v interní síti a chrání ji token.
-  # Kdo aktualizace z webu nechce, může tuto službu odstranit.
+  # Updates from the web interface. The only service with Docker access: it can only pull
+  # a newer application image and restart the app. Internal network only, protected by a token.
+  # Remove this service if you don't want updates from the web.
   updater:
     build: ./updater
     image: ${ELENVAR_UPDATER_IMAGE:-ghcr.io/gelluithor/elenvar-updater}:${ELENVAR_IMAGE_TAG:-latest}
@@ -64,7 +66,7 @@ services:
     security_opt: [no-new-privileges:true]
     networks: [backend]
 
-  # HTTPS reverzní proxy (jediná služba vystavená ven).
+  # HTTPS reverse proxy (the only service exposed to the network).
   caddy:
     image: caddy:2.11.7-alpine
     restart: unless-stopped

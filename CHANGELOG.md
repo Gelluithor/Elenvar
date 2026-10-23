@@ -2,6 +2,15 @@
 
 All notable changes to Elenvar are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/).
 
+## [1.1.1] – 2026-10-23
+
+### Added
+- Running behind an existing Traefik: `docker-compose.traefik.yml` and a step-by-step guide in the README.
+- `ELENVAR_TRUSTED_PROXIES` setting that limits which reverse proxies are trusted to report the client IP address (used for sign-in rate limiting and the audit log).
+
+### Changed
+- Comments in `.env.example`, compose files and the Caddyfile, and the demo script output, are in English.
+
 ## [1.1.0] – 2026-10-23
 
 ### Added
@@ -64,5 +73,6 @@ Initial release.
 - Hikvision NVR simulator (ISAPI with digest authentication, RTSP with a camera-like picture and on-screen display).
 - Demo with two NVRs and sample data (`dev/demo.sh`).
 
+[1.1.1]: https://github.com/Gelluithor/Elenvar/releases/tag/v1.1.1
 [1.1.0]: https://github.com/Gelluithor/Elenvar/releases/tag/v1.1.0
 [1.0.0]: https://github.com/Gelluithor/Elenvar/releases/tag/v1.0.0

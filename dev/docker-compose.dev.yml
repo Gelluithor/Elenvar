@@ -1,6 +1,6 @@
-# Vývojové rozšíření: přidá simulátor Hikvision NVR.
+# Development extension: adds a Hikvision NVR simulator.
 #   docker compose -f docker-compose.yml -f dev/docker-compose.dev.yml up -d --build
-# V aplikaci pak přidejte zařízení: host "mock-nvr", uživatel "admin", heslo "p@ss:w/rd".
+# In the app, add a device with host "mock-nvr", user "admin", password "p@ss:w/rd".
 services:
   mock-nvr:
     build: ./dev/mock-nvr

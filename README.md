@@ -70,6 +70,45 @@ Released images are also published to the GitHub Container Registry, so `docker 
 - **Public domain** (`ELENVAR_TLS=you@example.com`): Caddy obtains a Let's Encrypt certificate automatically. Ports 80 and 443 must be reachable from the internet.
 - `ELENVAR_DOMAIN` may list several addresses separated by commas, e.g. `elenvar.example.lan, 192.168.1.20`.
 
+### Running behind Traefik
+
+If you already run [Traefik](https://traefik.io/), use it instead of the bundled Caddy. The file `docker-compose.traefik.yml` does three things:
+- turns Caddy off;
+- connects the `app` service to Traefik's network;
+- adds the router labels.
+
+go2rtc and the updater stay on Elenvar's internal network.
+
+1. Find the name of the Docker network Traefik uses for its services (e.g. `traefik` or `proxy`):
+   ```bash
+   docker network ls
+   ```
+2. Add the Traefik settings to `.env`:
+   ```bash
+   ELENVAR_TRAEFIK_HOST=cameras.example.com      # host name Traefik routes to Elenvar
+   ELENVAR_TRAEFIK_NETWORK=traefik               # Traefik's Docker network
+   ELENVAR_TRAEFIK_ENTRYPOINT=websecure          # your HTTPS entrypoint
+   ELENVAR_TRAEFIK_CERTRESOLVER=letsencrypt      # your certificate resolver; leave empty if you don't use one
+   ELENVAR_TRUSTED_PROXIES=172.18.0.2            # Traefik's IP address, see step 3
+   ```
+3. Set `ELENVAR_TRUSTED_PROXIES` to Traefik's address. Only then does Elenvar trust the client IP that Traefik forwards; the IP is used for sign-in rate limiting and in the audit log. Without this, any other container on the Traefik network could fake its IP address.
+   ```bash
+   docker inspect -f '{{(index .NetworkSettings.Networks "traefik").IPAddress}}' traefik
+   ```
+   A container's IP can change when it is recreated. Either give Traefik a fixed address in its compose file (`ipv4_address`), or use the network range (e.g. `172.18.0.0/16`) – that trusts every container on the Traefik network, which is weaker.
+4. Start Elenvar with both compose files:
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.traefik.yml up -d --build
+   ```
+   To avoid repeating `-f` options, put `COMPOSE_FILE=docker-compose.yml:docker-compose.traefik.yml` into `.env`; plain `docker compose up -d` then uses both files. Updates from the web interface keep using both files as well.
+
+Requirements on the Traefik side:
+- **HTTPS is required.** The session cookie is `Secure`, so signing in over plain HTTP does not work.
+- **Pass the `Host` header through unchanged** (Traefik does this by default). Elenvar uses it to check where requests come from (CSRF protection, including WebSockets).
+- **WebSockets** for live video work out of the box.
+
+Tested with Traefik v3.7.
+
 ### Configuration (`.env`)
 
 | Variable | Default | Description |
@@ -83,6 +122,8 @@ Released images are also published to the GitHub Container Registry, so `docker 
 | `ELENVAR_SESSION_MAX_HOURS` | `12` | Maximum session length. |
 | `ELENVAR_SECRET_KEY` | *(generated into the volume)* | Key used to encrypt NVR and SMTP passwords. |
 | `ELENVAR_PLAYBACK_SOURCE` | `rtsp` | Set to `ffmpeg` for firmware where direct playback does not work. |
+| `ELENVAR_TRUSTED_PROXIES` | `*` | Reverse proxies whose `X-Forwarded-For` header is trusted (IPs or CIDR ranges). The default is safe with the bundled Caddy; set it when running [behind Traefik](#running-behind-traefik). |
+| `ELENVAR_TRAEFIK_*` | – | Traefik host, network, entrypoint and certificate resolver, see [Running behind Traefik](#running-behind-traefik). |
 | `ELENVAR_IMAGE`, `ELENVAR_UPDATER_IMAGE`, `ELENVAR_IMAGE_TAG` | `ghcr.io/gelluithor/…`, `latest` | Where updates are pulled from. |
 | `ELENVAR_UPDATE_REPO` | `Gelluithor/Elenvar` | GitHub repository that is checked for new releases. |
 | `TZ` | `Europe/Prague` | Server time zone. |

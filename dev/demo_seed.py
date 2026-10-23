@@ -40,13 +40,13 @@ def main() -> None:
             continue
         body = {**dev, "username": "admin", "password": "p@ss:w/rd"}
         c.post("/api/nvrs", json=body, headers=h).raise_for_status()
-        print(f"  + zařízení {dev['name']}")
+        print(f"  + device {dev['name']}")
 
     users = {u["username"] for u in c.get("/api/users").json()}
     for user in USERS:
         if user["username"] not in users:
             c.post("/api/users", json=user, headers=h).raise_for_status()
-            print(f"  + uživatel {user['username']}")
+            print(f"  + user {user['username']}")
 
     nvrs = {n["name"]: n["id"] for n in c.get("/api/nvrs").json()}
     for _ in range(30):
@@ -70,7 +70,7 @@ def main() -> None:
         httpx.get("http://mock-sklad/mock/set?offline=", timeout=10)
         c.post(f"/api/nvrs/{sklad}/poll", headers=h)
     c.post("/api/auth/logout", headers=h)
-    print("  hotovo")
+    print("  done")
 
 
 if __name__ == "__main__":

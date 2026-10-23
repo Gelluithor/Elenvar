@@ -3,9 +3,9 @@
 	skip_install_trust
 }
 
-# ELENVAR_DOMAIN: jedna nebo více adres oddělených čárkou, např. "elenvar.firma.cz"
-# nebo "localhost, 192.168.1.20". ELENVAR_TLS: "internal" (vlastní certifikační
-# autorita Caddy) nebo e-mail pro automatický certifikát Let's Encrypt.
+# ELENVAR_DOMAIN: one or more comma-separated addresses, e.g. "elenvar.example.com"
+# or "localhost, 192.168.1.20". ELENVAR_TLS: "internal" (Caddy's own certificate
+# authority) or an e-mail address for an automatic Let's Encrypt certificate.
 {$ELENVAR_DOMAIN} {
 	tls {$ELENVAR_TLS}
 

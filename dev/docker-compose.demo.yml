@@ -1,5 +1,5 @@
-# Demo se dvěma simulovanými NVR. Spouští se skriptem dev/demo.sh.
-# Aplikace je dostupná jen z tohoto počítače na http://localhost:8080 (bez Caddy/HTTPS).
+# Demo with two simulated NVRs. Started by dev/demo.sh.
+# The app is reachable only from this computer at http://localhost:8080 (no Caddy/HTTPS).
 services:
   app:
     ports:
