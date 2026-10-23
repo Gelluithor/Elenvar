@@ -1,68 +1,68 @@
 # Changelog
 
-Všechny podstatné změny projektu Elenvar. Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/), verze se řídí [sémantickým verzováním](https://semver.org/lang/cs/).
+All notable changes to Elenvar are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/).
 
 ## [1.1.0] – 2026-10-23
 
-### Přidáno
-- Angličtina: celé rozhraní, chybové hlášky serveru, události monitoringu, stavy zařízení i auditní záznam jsou dostupné česky i anglicky.
-- Přepínač jazyka v postranním panelu a na přihlašovací obrazovce; výchozí jazyk podle prohlížeče.
-- Volba jazyka upozornění (e-mail, webhook) v Nastavení.
-- Kontroly úplnosti překladu pro frontend i backend (`tools/`).
+### Added
+- English language support across the whole interface, server error messages, monitoring events, device states and the audit log.
+- Language switch in the sidebar and on the sign-in screen; the default language follows the browser.
+- Notification language setting for e-mails and webhooks.
+- Translation completeness checks for the frontend and backend (`tools/`).
 
-### Změněno
-- README je kompletně v angličtině.
-- Logy serveru jsou v angličtině.
-- Formát data a času se řídí zvoleným jazykem.
+### Changed
+- The README is now entirely in English.
+- Server logs are in English.
+- Dates and times are formatted according to the selected language.
 
 ## [1.0.0] – 2026-10-22
 
-První vydání.
+Initial release.
 
-### Živý obraz
-- Sledování kamer z více NVR najednou v mřížce 1, 4, 9 nebo 16 oken.
-- Přetažení kamery do okna, zvětšení na celé okno, režim celé obrazovky.
-- Automatická volba kvality: substream v mřížce, hlavní stream při zvětšení.
-- Volitelný převod H.265 na H.264 pro prohlížeče bez podpory H.265.
-- Automatické obnovení spojení po výpadku.
+### Live view
+- Watch cameras from multiple NVRs at once in a 1, 4, 9 or 16 tile grid.
+- Drag cameras into tiles, enlarge a tile, full-screen mode.
+- Automatic quality selection: substream in the grid, main stream when enlarged.
+- Optional H.265 to H.264 conversion for browsers without H.265 support.
+- Automatic reconnection after an outage.
 
-### Záznamy
-- Vyhledání záznamů na NVR a časová osa dne s rozlišením průběžného záznamu a událostí.
-- Přehrávání od libovolného času, posun o ±30 s, pozastavení.
-- Stažení úseku záznamu.
+### Recordings
+- Search recordings on the NVR and browse a day timeline that distinguishes continuous recording from events.
+- Play from any point in time, skip ±30 s, pause.
+- Download recording segments.
 
 ### Monitoring
-- Pravidelná kontrola dostupnosti NVR, stavu kamer, disků (HDD/NAS) a odchylky času.
-- Označení kamer, které se mají hlídat; událost a upozornění při výpadku i obnovení.
-- Ochrana před planými poplachy (počet selhání před upozorněním).
-- Upozornění e-mailem (SMTP) a webhookem.
-- Při chybném hesle k NVR se dotazování pozastaví, aby se účet na NVR nezablokoval.
+- Periodic checks of NVR availability, camera status, disks (HDD/NAS) and clock drift.
+- Mark which cameras are monitored; events and notifications on outages and recoveries.
+- False-alarm protection (number of failures before notifying).
+- Notifications by e-mail (SMTP) and webhook.
+- Polling pauses when the NVR password is wrong, so the NVR account does not get locked.
 
-### Správa zařízení
-- Přidání NVR, DVR i samostatných IP kamer Hikvision přes ISAPI, test připojení.
-- Úprava parametrů streamů kamer (kodek, rozlišení, snímková frekvence, datový tok, GOP) podle schopností kamery.
-- Restart zařízení na dálku, přehled disků, firmwaru a času zařízení.
+### Device management
+- Add Hikvision NVRs, DVRs and standalone IP cameras over ISAPI, with a connection test.
+- Change camera stream parameters (codec, resolution, frame rate, bitrate, GOP) within the camera's capabilities.
+- Restart devices remotely; overview of disks, firmware and device time.
 
-### Zabezpečení
-- Povinné dvoufázové ověření (TOTP) s 10 jednorázovými záložními kódy.
-- Hesla hashovaná Argon2id, relace na straně serveru, ochrana CSRF a kontrola původu požadavků.
-- Omezení pokusů o přihlášení a dočasné zablokování účtu.
-- Role pozorovatel, operátor a administrátor.
-- Šifrovaná hesla k NVR a SMTP, která se nikdy neposílají do prohlížeče.
-- Auditní záznam přihlášení, změn nastavení, přehrávání a stahování záznamů.
-- HTTPS přes Caddy, přísné bezpečnostní hlavičky, kontejnery s omezenými oprávněními.
+### Security
+- Mandatory two-factor authentication (TOTP) with 10 one-time recovery codes.
+- Argon2id password hashing, server-side sessions, CSRF protection and origin checks.
+- Sign-in rate limiting and temporary account lockout.
+- Viewer, operator and administrator roles.
+- Encrypted NVR and SMTP passwords that are never sent to the browser.
+- Audit log of sign-ins, settings changes, playback and downloads.
+- HTTPS via Caddy, strict security headers, containers with restricted privileges.
 
-### Aktualizace
-- Sledování nových vydání na GitHubu, upozornění na novou verzi.
-- Instalace aktualizace přímo z webového rozhraní (služba updater, potvrzení heslem).
+### Updates
+- Watches GitHub for new releases and announces new versions.
+- Installs updates directly from the web interface (updater service, confirmed with a password).
 
-### Rozhraní
-- Světlý a tmavý motiv, logo „Bdělé oko“ v provedení Noc (tmavý motiv) a Grafit (světlý motiv).
-- Responzivní rozvržení pro telefony a tablety.
+### Interface
+- Light and dark theme; the "Watchful eye" logo in Night (dark theme) and Graphite (light theme) variants.
+- Responsive layout for phones and tablets.
 
-### Pro vývoj
-- Simulátor Hikvision NVR (ISAPI s digest autentizací, RTSP s obrazem kamery a OSD).
-- Demo se dvěma NVR a ukázkovými daty (`dev/demo.sh`).
+### Development
+- Hikvision NVR simulator (ISAPI with digest authentication, RTSP with a camera-like picture and on-screen display).
+- Demo with two NVRs and sample data (`dev/demo.sh`).
 
 [1.1.0]: https://github.com/Gelluithor/Elenvar/releases/tag/v1.1.0
 [1.0.0]: https://github.com/Gelluithor/Elenvar/releases/tag/v1.0.0
