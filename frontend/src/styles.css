@@ -2113,14 +2113,14 @@ a.stat-card:active {
   font-size: 12px;
 }
 /* jediný okamžik při načtení: logo na přihlášení jednou mrkne */
-.logo-animated .logo-eye {
+.logo-animated .logo-iris {
   transform-box: fill-box;
   transform-origin: center;
-  animation: blink 600ms var(--ease-out) 900ms 1 both;
+  animation: blink 500ms var(--ease-out) 900ms 1 both;
 }
 @keyframes blink {
   40% {
-    transform: scaleY(0.1);
+    transform: scaleY(0.05);
   }
 }
 .totp-setup {

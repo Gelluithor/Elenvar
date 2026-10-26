@@ -48,16 +48,17 @@ export function Logo({ size = 34, animated = false, className = "" }: Props) {
       </defs>
       <rect width="128" height="128" rx="28.6" fill={`url(#${id}-bg)`} />
       <g transform="translate(0 11)" filter={`url(#${id}-sh)`}>
-        <g className="logo-eye">
-          <path d={OPENING} fill="#fff" opacity="0.08" />
-          <g clipPath={`url(#${id}-eye)`}>
+        <path d={OPENING} fill="#fff" opacity="0.08" />
+        <g clipPath={`url(#${id}-eye)`}>
+          {/* Mrknutí zavírá jen duhovku – víčka a obočí zůstávají na místě. */}
+          <g className="logo-iris">
             <circle cx="63" cy="60" r="19" fill={`url(#${id}-iris)`} />
             <path d={IRIS_STAR} className="logo-star" />
             <circle cx="63" cy="60" r="4.5" className="logo-pupil" />
           </g>
-          <path d={UPPER_LID} className="logo-lid" />
-          <path d={LOWER_LID} fill="none" className="logo-lid-line" strokeWidth="4" strokeLinecap="round" />
         </g>
+        <path d={UPPER_LID} className="logo-lid" />
+        <path d={LOWER_LID} fill="none" className="logo-lid-line" strokeWidth="4" strokeLinecap="round" />
         <path d={BROW} fill="none" className="logo-lid-line" strokeWidth="5" strokeLinecap="round" />
       </g>
       <rect width="128" height="128" rx="28.6" fill={`url(#${id}-hl)`} />
