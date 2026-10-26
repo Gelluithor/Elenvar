@@ -51,10 +51,12 @@ export function Logo({ size = 34, animated = false, className = "" }: Props) {
         <path d={OPENING} fill="#fff" opacity="0.08" />
         <g clipPath={`url(#${id}-eye)`}>
           {/* Mrknutí zavírá jen duhovku – víčka a obočí zůstávají na místě. */}
-          <g className="logo-iris">
-            <circle cx="63" cy="60" r="19" fill={`url(#${id}-iris)`} />
-            <path d={IRIS_STAR} className="logo-star" />
-            <circle cx="63" cy="60" r="4.5" className="logo-pupil" />
+          <g transform="translate(63 60)">
+            <g className="logo-iris">
+              <circle r="19" fill={`url(#${id}-iris)`} />
+              <path d={IRIS_STAR} className="logo-star" transform="translate(-63 -60)" />
+              <circle r="4.5" className="logo-pupil" />
+            </g>
           </g>
         </g>
         <path d={UPPER_LID} className="logo-lid" />

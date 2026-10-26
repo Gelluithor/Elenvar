@@ -2112,10 +2112,11 @@ a.stat-card:active {
   color: var(--label-3);
   font-size: 12px;
 }
-/* jediný okamžik při načtení: logo na přihlášení jednou mrkne */
+/* jediný okamžik při načtení: logo na přihlášení jednou mrkne.
+   Skupina leží ve středu duhovky (translate v Logo.tsx), takže stačí počátek 0 0
+   a nezávisíme na podpoře transform-box v jednotlivých prohlížečích. */
 .logo-animated .logo-iris {
-  transform-box: fill-box;
-  transform-origin: center;
+  transform-origin: 0 0;
   animation: blink 500ms var(--ease-out) 900ms 1 both;
 }
 @keyframes blink {
