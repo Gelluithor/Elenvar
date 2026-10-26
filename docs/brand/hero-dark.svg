@@ -10,9 +10,6 @@ text { font-family: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
 .alert { font-weight: 800; font-size: 9px; fill: #ff6961; text-anchor: middle; letter-spacing: 1px; }
 .stroke { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 1.4s cubic-bezier(.6,0,.3,1) forwards; }
 .lid { fill-opacity: 0; stroke: #f4f1e8; stroke-width: 2.5; animation: draw 1.4s cubic-bezier(.6,0,.3,1) forwards, fill .7s 1.1s ease-out forwards; }
-.iris { transform-origin: 0 0; transform: scaleY(0); animation: open .6s 1.2s cubic-bezier(.2,.9,.3,1.2) forwards; }
-.star { transform-origin: 0 0; animation: spin 40s 1.8s linear infinite; }
-.blink { transform-origin: 0 0; animation: blink 12s 4s ease-in-out infinite; }
 .glow { opacity: 0; animation: glow 5s 2.4s ease-in-out infinite; }
 .words { opacity: 0; animation: rise .8s 1.3s cubic-bezier(.2,.8,.2,1) forwards; }
 .tagline { opacity: 0; animation: rise .8s 1.6s cubic-bezier(.2,.8,.2,1) forwards; }
@@ -26,9 +23,6 @@ text { font-family: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
 .motion { animation: pulse 1.6s ease-in-out infinite; }
 @keyframes draw { to { stroke-dashoffset: 0; } }
 @keyframes fill { to { fill-opacity: 1; stroke-opacity: 0; } }
-@keyframes open { to { transform: scaleY(1); } }
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes blink { 0%, 96%, 100% { transform: scaleY(1); } 97.5% { transform: scaleY(.05); } }
 @keyframes glow { 0%, 100% { opacity: 0; } 50% { opacity: .5; } }
 @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 @keyframes pop { from { opacity: 0; transform: translateY(16px) scale(.92); } to { opacity: 1; transform: none; } }
@@ -37,16 +31,15 @@ text { font-family: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
 @media (prefers-reduced-motion: reduce) {
   .stroke, .lid { animation: none; stroke-dashoffset: 0; fill-opacity: 1; stroke-opacity: 0; }
-  .iris { animation: none; transform: none; }
   .words, .tagline, .screen { animation: none; opacity: 1; }
-  .star, .blink, .glow, .car, .cursor, .dot, .rec, .motion { animation: none; }
+  .glow, .car, .cursor, .dot, .rec, .motion { animation: none; }
 }
 </style>
 <defs>
   <radialGradient id="iris" cx=".42" cy=".36" r=".75"><stop offset="0" stop-color="#ffd66b"/><stop offset="1" stop-color="#e09a1d"/></radialGradient>
   <radialGradient id="halo" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffcf57" stop-opacity=".55"/><stop offset="1" stop-color="#ffcf57" stop-opacity="0"/></radialGradient>
   <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c3a4c"/><stop offset="1" stop-color="#151d28"/></linearGradient>
-  <clipPath id="eye"><path d="M20 66 C38 48 82 44 104 56 C84 78 44 84 20 66 Z"/></clipPath>
+  <clipPath id="eye"><path d="M20 66 C38 48 82 44 104 56 C84 78 44 84 20 66 Z"><animate attributeName="d" values="M20 66 C38 48 82 44 104 56 C84 78 44 84 20 66 Z;M20 66 C38 48 82 44 104 56 C84 78 44 84 20 66 Z;M20 68 C42 82 80 80 104 58 C84 80 44 84 20 68 Z;M20 66 C38 48 82 44 104 56 C84 78 44 84 20 66 Z;M20 66 C38 48 82 44 104 56 C84 78 44 84 20 66 Z" dur="12s" begin="4s" repeatCount="indefinite" keyTimes="0;.96;.975;.99;1" calcMode="spline" keySplines=".4 0 .6 1;.4 0 .6 1;.4 0 .6 1;.4 0 .6 1"/></path></clipPath>
   <clipPath id="tileclip"><rect width="92" height="54" rx="5"/></clipPath>
 </defs>
 
@@ -54,16 +47,18 @@ text { font-family: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
   <circle class="glow" cx="63" cy="60" r="34" fill="url(#halo)"/>
   <g clip-path="url(#eye)">
     <g transform="translate(63 60)">
-      <g class="blink">
-        <g class="iris">
-          <circle r="19" fill="url(#iris)"/>
-          <g class="star"><path transform="translate(-63 -60)" d="M63.00 45.00 L64.15 57.23 L67.45 55.55 L65.77 58.85 L74.70 60.00 L65.77 61.15 L67.45 64.45 L64.15 62.77 L63.00 75.00 L61.85 62.77 L58.55 64.45 L60.23 61.15 L51.30 60.00 L60.23 58.85 L58.55 55.55 L61.85 57.23Z" fill="#1a2440"/></g>
-          <circle r="4.5" fill="#ffd66b"/>
+      <g transform="scale(1 0)">
+        <animateTransform attributeName="transform" type="scale" from="1 0" to="1 1" begin="1.2s" dur=".6s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines=".2 .9 .3 1"/>
+        <circle r="19" fill="url(#iris)"/>
+        <g>
+          <animateTransform attributeName="transform" type="rotate" from="0" to="360" begin="1.8s" dur="40s" repeatCount="indefinite"/>
+          <path transform="translate(-63 -60)" d="M63.00 45.00 L64.15 57.23 L67.45 55.55 L65.77 58.85 L74.70 60.00 L65.77 61.15 L67.45 64.45 L64.15 62.77 L63.00 75.00 L61.85 62.77 L58.55 64.45 L60.23 61.15 L51.30 60.00 L60.23 58.85 L58.55 55.55 L61.85 57.23Z" fill="#1a2440"/>
         </g>
+        <circle r="4.5" fill="#ffd66b"/>
       </g>
     </g>
   </g>
-  <path class="lid" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" d="M12 66 C30 42 70 34 104 46 C111 48 117 45 122 40 C118 52 110 57 102 56 C80 46 42 48 20 68 Z" fill="#f4f1e8"/>
+  <path class="lid" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" d="M12 66 C30 42 70 34 104 46 C111 48 117 45 122 40 C118 52 110 57 102 56 C80 46 42 48 20 68 Z" fill="#f4f1e8"><animate attributeName="d" values="M12 66 C30 42 70 34 104 46 C111 48 117 45 122 40 C118 52 110 57 102 56 C80 46 42 48 20 68 Z;M12 66 C30 42 70 34 104 46 C111 48 117 45 122 40 C118 52 110 57 102 56 C80 46 42 48 20 68 Z;M12 66 C32 70 72 74 104 58 C111 58 117 53 122 48 C118 58 110 64 102 64 C80 82 42 84 20 70 Z;M12 66 C30 42 70 34 104 46 C111 48 117 45 122 40 C118 52 110 57 102 56 C80 46 42 48 20 68 Z;M12 66 C30 42 70 34 104 46 C111 48 117 45 122 40 C118 52 110 57 102 56 C80 46 42 48 20 68 Z" dur="12s" begin="4s" repeatCount="indefinite" keyTimes="0;.96;.975;.99;1" calcMode="spline" keySplines=".4 0 .6 1;.4 0 .6 1;.4 0 .6 1;.4 0 .6 1"/></path>
   <path class="stroke" pathLength="1" d="M22 69 C44 84 80 82 103 58" fill="none" stroke="#f4f1e8" stroke-width="4" stroke-linecap="round"/>
   <path class="stroke" pathLength="1" d="M28 34 C48 22 80 20 108 28" fill="none" stroke="#f4f1e8" stroke-width="5" stroke-linecap="round"/>
 </g>
