@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 300" width="960" height="300" role="img" aria-label="Elenvar">
+<style>
+text { font-family: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
+.title { font-weight: 800; font-size: 100px; letter-spacing: 8px; fill: #101c2f; }
+.tag { font-weight: 600; font-size: 24px; fill: #5b6475; letter-spacing: .2px; }
+.osd { font-family: Menlo, Consolas, monospace; font-size: 5px; fill: #e8eaee; }
+.label { font-weight: 700; font-size: 8px; fill: #c9d1dc; }
+.small { font-weight: 600; font-size: 6px; fill: #7f8a9c; }
+.ok { font-weight: 800; font-size: 8px; fill: #30d158; }
+.alert { font-weight: 800; font-size: 9px; fill: #ff6961; text-anchor: middle; letter-spacing: 1px; }
+.stroke { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 1.4s cubic-bezier(.6,0,.3,1) forwards; }
+.lid { fill-opacity: 0; stroke: #1c2433; stroke-width: 2.5; animation: draw 1.4s cubic-bezier(.6,0,.3,1) forwards, fill .7s 1.1s ease-out forwards; }
+.iris { transform-box: fill-box; transform-origin: center; transform: scaleY(0); animation: open .6s 1.2s cubic-bezier(.2,.9,.3,1.2) forwards; }
+.star { transform-box: fill-box; transform-origin: center; animation: spin 40s 1.8s linear infinite; }
+.blink { transform-box: fill-box; transform-origin: center; animation: blink 7s 4s ease-in-out infinite; }
+.glow { opacity: 0; animation: glow 5s 2.4s ease-in-out infinite; }
+.words { opacity: 0; animation: rise .8s 1.3s cubic-bezier(.2,.8,.2,1) forwards; }
+.tagline { opacity: 0; animation: rise .8s 1.6s cubic-bezier(.2,.8,.2,1) forwards; }
+.screen { opacity: 0; animation: pop .6s cubic-bezier(.2,.9,.3,1.2) forwards; }
+.car { animation: drive 6s linear infinite; }
+.cursor { animation: scrub 8s linear infinite; }
+.bar { transform-origin: 0 0; transform: scaleX(.72); }
+.dot { animation: pulse 2.8s ease-in-out infinite; }
+.bad { animation-duration: 1.2s; }
+.rec { animation: pulse 1.2s steps(2) infinite; }
+.motion { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes fill { to { fill-opacity: 1; stroke-opacity: 0; } }
+@keyframes open { to { transform: scaleY(1); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.08); } }
+@keyframes glow { 0%, 100% { opacity: 0; } 50% { opacity: .5; } }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes pop { from { opacity: 0; transform: translateY(16px) scale(.92); } to { opacity: 1; transform: none; } }
+@keyframes drive { from { transform: translateX(0); } to { transform: translateX(130px); } }
+@keyframes scrub { from { transform: translateX(0); } to { transform: translateX(78px); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) {
+  .stroke, .lid { animation: none; stroke-dashoffset: 0; fill-opacity: 1; stroke-opacity: 0; }
+  .iris { animation: none; transform: none; }
+  .words, .tagline, .screen { animation: none; opacity: 1; }
+  .star, .blink, .glow, .car, .cursor, .dot, .rec, .motion { animation: none; }
+}
+</style>
+<defs>
+  <radialGradient id="iris" cx=".42" cy=".36" r=".75"><stop offset="0" stop-color="#ffd66b"/><stop offset="1" stop-color="#e09a1d"/></radialGradient>
+  <radialGradient id="halo" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffcf57" stop-opacity=".55"/><stop offset="1" stop-color="#ffcf57" stop-opacity="0"/></radialGradient>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c3a4c"/><stop offset="1" stop-color="#151d28"/></linearGradient>
+  <clipPath id="eye"><path d="M20 66 C38 48 82 44 104 56 C84 78 44 84 20 66 Z"/></clipPath>
+  <clipPath id="tileclip"><rect width="92" height="54" rx="5"/></clipPath>
+</defs>
+
+<g transform="translate(0 34) scale(2.05)">
+  <circle class="glow" cx="63" cy="60" r="34" fill="url(#halo)"/>
+  <g class="blink">
+    <g clip-path="url(#eye)">
+      <g class="iris">
+        <circle cx="63" cy="60" r="19" fill="url(#iris)"/>
+        <path class="star" d="M63.00 45.00 L64.15 57.23 L67.45 55.55 L65.77 58.85 L74.70 60.00 L65.77 61.15 L67.45 64.45 L64.15 62.77 L63.00 75.00 L61.85 62.77 L58.55 64.45 L60.23 61.15 L51.30 60.00 L60.23 58.85 L58.55 55.55 L61.85 57.23Z" fill="#1a2440"/>
+        <circle cx="63" cy="60" r="4.5" fill="#ffd66b"/>
+      </g>
+    </g>
+    <path class="lid" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" d="M12 66 C30 42 70 34 104 46 C111 48 117 45 122 40 C118 52 110 57 102 56 C80 46 42 48 20 68 Z" fill="#1c2433"/>
+    <path class="stroke" pathLength="1" d="M22 69 C44 84 80 82 103 58" fill="none" stroke="#1c2433" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <path class="stroke" pathLength="1" d="M28 34 C48 22 80 20 108 28" fill="none" stroke="#1c2433" stroke-width="5" stroke-linecap="round"/>
+</g>
+
+<g class="words"><text class="title" x="296" y="118">ELENVAR</text></g>
+<g class="tagline"><text class="tag" x="300" y="166">Every camera of every NVR in one place, self-hosted</text></g>
+
+  <g class="screen" style="animation-delay:1.90s">
+    <circle class="dot" cx="392" cy="203" r="3.2" fill="#34c759"/>
+    <rect x="300" y="210" width="98" height="60" rx="7" fill="#0e1420" stroke="#cfd6e2" stroke-width="2"/>
+    <svg x="303" y="213" width="92" height="54" viewBox="0 0 92 54"><g clip-path="url(#tileclip)"><rect width="92" height="54" fill="url(#sky)"/>
+      <rect y="34" width="92" height="20" fill="#0d131b"/>
+      <rect x="10" y="17" width="26" height="18" fill="#0a0f16"/>
+      <rect x="14" y="21" width="3" height="3" fill="#d9b25c"/><rect x="25" y="27" width="3" height="3" fill="#d9b25c" opacity=".8"/>
+      <rect x="66" y="16" width="1.6" height="19" fill="#0a0f16"/><rect x="63" y="15" width="7" height="2" fill="#f2deb0"/>
+      <rect class="car" style="animation-delay:0s" x="-20" y="36" width="16" height="6" rx="1.5" fill="#aeb6c2"/>
+      <text x="3" y="7" class="osd">2026-10-26 21:04</text>
+      <text x="89" y="51" class="osd" text-anchor="end">Gate</text></g></svg>
+  </g>
+  <g class="screen" style="animation-delay:2.02s">
+    <circle class="dot" cx="498" cy="203" r="3.2" fill="#34c759"/>
+    <rect x="406" y="210" width="98" height="60" rx="7" fill="#0e1420" stroke="#cfd6e2" stroke-width="2"/>
+    <svg x="409" y="213" width="92" height="54" viewBox="0 0 92 54"><g clip-path="url(#tileclip)"><svg x="0" y="0" width="45" height="26" viewBox="0 0 92 54"><rect width="92" height="54" fill="url(#sky)"/>
+      <rect y="34" width="92" height="20" fill="#0d131b"/>
+      <rect x="10" y="17" width="26" height="18" fill="#0a0f16"/>
+      <rect x="14" y="21" width="3" height="3" fill="#d9b25c"/><rect x="25" y="27" width="3" height="3" fill="#d9b25c" opacity=".8"/>
+      <rect x="66" y="16" width="1.6" height="19" fill="#0a0f16"/><rect x="63" y="15" width="7" height="2" fill="#f2deb0"/>
+      <rect class="car" style="animation-delay:0s" x="-20" y="36" width="16" height="6" rx="1.5" fill="#aeb6c2"/>
+      <text x="3" y="7" class="osd">2026-10-26 21:04</text>
+      <text x="89" y="51" class="osd" text-anchor="end"></text></svg><svg x="47" y="0" width="45" height="26" viewBox="0 0 92 54"><rect width="92" height="54" fill="url(#sky)"/>
+      <rect y="34" width="92" height="20" fill="#0d131b"/>
+      <rect x="10" y="17" width="26" height="18" fill="#0a0f16"/>
+      <rect x="14" y="21" width="3" height="3" fill="#d9b25c"/><rect x="25" y="27" width="3" height="3" fill="#d9b25c" opacity=".8"/>
+      <rect x="66" y="16" width="1.6" height="19" fill="#0a0f16"/><rect x="63" y="15" width="7" height="2" fill="#f2deb0"/>
+      
+      <text x="3" y="7" class="osd">2026-10-26 21:04</text>
+      <text x="89" y="51" class="osd" text-anchor="end"></text></svg><svg x="0" y="28" width="45" height="26" viewBox="0 0 92 54"><rect width="92" height="54" fill="url(#sky)"/>
+      <rect y="34" width="92" height="20" fill="#0d131b"/>
+      <rect x="10" y="17" width="26" height="18" fill="#0a0f16"/>
+      <rect x="14" y="21" width="3" height="3" fill="#d9b25c"/><rect x="25" y="27" width="3" height="3" fill="#d9b25c" opacity=".8"/>
+      <rect x="66" y="16" width="1.6" height="19" fill="#0a0f16"/><rect x="63" y="15" width="7" height="2" fill="#f2deb0"/>
+      
+      <text x="3" y="7" class="osd">2026-10-26 21:04</text>
+      <text x="89" y="51" class="osd" text-anchor="end"></text></svg><svg x="47" y="28" width="45" height="26" viewBox="0 0 92 54"><rect width="92" height="54" fill="url(#sky)"/>
+      <rect y="34" width="92" height="20" fill="#0d131b"/>
+      <rect x="10" y="17" width="26" height="18" fill="#0a0f16"/>
+      <rect x="14" y="21" width="3" height="3" fill="#d9b25c"/><rect x="25" y="27" width="3" height="3" fill="#d9b25c" opacity=".8"/>
+      <rect x="66" y="16" width="1.6" height="19" fill="#0a0f16"/><rect x="63" y="15" width="7" height="2" fill="#f2deb0"/>
+      <rect class="car" style="animation-delay:3s" x="-20" y="36" width="16" height="6" rx="1.5" fill="#aeb6c2"/>
+      <text x="3" y="7" class="osd">2026-10-26 21:04</text>
+      <text x="89" y="51" class="osd" text-anchor="end"></text></svg></g></svg>
+  </g>
+  <g class="screen" style="animation-delay:2.14s">
+    <circle class="dot" cx="604" cy="203" r="3.2" fill="#34c759"/>
+    <rect x="512" y="210" width="98" height="60" rx="7" fill="#0e1420" stroke="#cfd6e2" stroke-width="2"/>
+    <svg x="515" y="213" width="92" height="54" viewBox="0 0 92 54"><g clip-path="url(#tileclip)"><rect width="92" height="54" fill="url(#sky)"/>
+      <rect y="34" width="92" height="20" fill="#0d131b"/>
+      <rect x="10" y="17" width="26" height="18" fill="#0a0f16"/>
+      <rect x="14" y="21" width="3" height="3" fill="#d9b25c"/><rect x="25" y="27" width="3" height="3" fill="#d9b25c" opacity=".8"/>
+      <rect x="66" y="16" width="1.6" height="19" fill="#0a0f16"/><rect x="63" y="15" width="7" height="2" fill="#f2deb0"/>
+      
+      <text x="3" y="7" class="osd">2026-10-26 21:04</text>
+      <text x="89" y="51" class="osd" text-anchor="end">Warehouse</text><rect class="motion" x="44" y="24" width="12" height="16" rx="1" fill="none" stroke="#ffd60a" stroke-width="1.2"/><rect x="48" y="27" width="4" height="11" rx="2" fill="#aeb6c2"/><circle class="rec" cx="80" cy="6" r="2.4" fill="#ff453a"/><text x="76" y="8" class="osd" text-anchor="end">REC</text></g></svg>
+  </g>
+  <g class="screen" style="animation-delay:2.26s">
+    <circle class="dot bad" cx="710" cy="203" r="3.2" fill="#ff453a"/>
+    <rect x="618" y="210" width="98" height="60" rx="7" fill="#0e1420" stroke="#cfd6e2" stroke-width="2"/>
+    <svg x="621" y="213" width="92" height="54" viewBox="0 0 92 54"><g clip-path="url(#tileclip)"><rect width="92" height="54" fill="#1a0f12"/><path d="M33 20h18a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H33a3 3 0 0 1-3-3v-8a3 3 0 0 1 3-3zm21 6 8-4v10l-8-4" fill="none" stroke="#ff6961" stroke-width="2" stroke-linejoin="round"/><path d="M28 16l36 22" stroke="#ff6961" stroke-width="2.2" stroke-linecap="round"/><text x="46" y="49" class="alert">OFFLINE</text></g></svg>
+  </g>
+  <g class="screen" style="animation-delay:2.38s">
+    <circle class="dot" cx="816" cy="203" r="3.2" fill="#34c759"/>
+    <rect x="724" y="210" width="98" height="60" rx="7" fill="#0e1420" stroke="#cfd6e2" stroke-width="2"/>
+    <svg x="727" y="213" width="92" height="54" viewBox="0 0 92 54"><g clip-path="url(#tileclip)"><rect width="92" height="54" fill="#111826"/><text x="6" y="12" class="label">Recordings</text><rect x="6" y="22" width="5" height="10" rx="1.5" fill="#0a84ff"/><rect x="14" y="22" width="7" height="10" rx="1.5" fill="#ff9f0a"/><rect x="22" y="22" width="7" height="10" rx="1.5" fill="#0a84ff"/><rect x="30" y="22" width="5" height="10" rx="1.5" fill="#0a84ff"/><rect x="38" y="22" width="7" height="10" rx="1.5" fill="#0a84ff"/><rect x="46" y="22" width="7" height="10" rx="1.5" fill="#ff9f0a"/><rect x="54" y="22" width="5" height="10" rx="1.5" fill="#0a84ff"/><rect x="62" y="22" width="7" height="10" rx="1.5" fill="#0a84ff"/><rect x="70" y="22" width="7" height="10" rx="1.5" fill="#0a84ff"/><rect x="78" y="22" width="5" height="10" rx="1.5" fill="#ff9f0a"/><rect class="cursor" x="6" y="18" width="1.6" height="18" rx=".8" fill="#f4f6fa"/><text x="6" y="47" class="small">00:00</text><text x="86" y="47" class="small" text-anchor="end">24:00</text></g></svg>
+  </g>
+  <g class="screen" style="animation-delay:2.50s">
+    <circle class="dot" cx="922" cy="203" r="3.2" fill="#34c759"/>
+    <rect x="830" y="210" width="98" height="60" rx="7" fill="#0e1420" stroke="#cfd6e2" stroke-width="2"/>
+    <svg x="833" y="213" width="92" height="54" viewBox="0 0 92 54"><g clip-path="url(#tileclip)"><rect width="92" height="54" fill="#111826"/><text x="6" y="12" class="label">HDD 1</text><text x="86" y="12" class="ok" text-anchor="end">OK</text><rect x="6" y="20" width="80" height="5" rx="2.5" fill="#263042"/><rect class="bar" x="6" y="20" width="80" height="5" rx="2.5" fill="#0a84ff"/><text x="6" y="38" class="label">Cameras</text><text x="86" y="38" class="ok" text-anchor="end">7 / 8</text><circle cx="9" cy="46" r="2" fill="#34c759"/><circle cx="16" cy="46" r="2" fill="#34c759"/><circle cx="23" cy="46" r="2" fill="#34c759"/><circle cx="30" cy="46" r="2" fill="#ff453a" class="dot bad"/></g></svg>
+  </g>
+</svg>

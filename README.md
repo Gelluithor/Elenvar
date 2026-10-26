@@ -1,88 +1,139 @@
 <p align="center">
-  <img src="frontend/public/logo-dark.svg" width="96" height="96" alt="">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/hero-dark.svg">
+    <img src="docs/brand/hero-light.svg" width="860" alt="Elenvar">
+  </picture>
 </p>
 
-<h1 align="center">Elenvar</h1>
-
-<p align="center">Self-hosted central management and monitoring for Hikvision camera systems, running in Docker.</p>
+<p align="center">
+  Central management and monitoring for <a href="https://www.hikvision.com/">Hikvision</a> NVRs and cameras:
+  live view, recordings and the health of every camera, self-hosted with one <code>docker compose up</code>.
+</p>
 
 <p align="center">
-  <img src="docs/demo.gif" width="900" alt="Elenvar in action: sign-in, overview, live view from four cameras, an enlarged camera, device detail, recordings timeline, monitoring and settings">
+  <a href="https://github.com/Gelluithor/Elenvar/releases/latest"><img src="https://img.shields.io/github/v/release/Gelluithor/Elenvar?label=release&color=e3b449" alt="Latest release"></a>
+  <a href="https://github.com/users/Gelluithor/packages/container/package/elenvar"><img src="https://img.shields.io/badge/docker-ghcr.io%2Fgelluithor%2Felenvar-2496ed?logo=docker&logoColor=white" alt="Docker image"></a>
+  <img src="https://img.shields.io/badge/amd64%20%C2%B7%20arm64-supported-555" alt="amd64 and arm64">
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/Gelluithor/Elenvar?color=555" alt="License"></a>
+</p>
+
+<p align="center">
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#preparing-a-hikvision-nvr">Preparing an NVR</a> ·
+  <a href="#running-behind-traefik">Traefik</a> ·
+  <a href="#roles">Roles</a> ·
+  <a href="#security">Security</a> ·
+  <a href="#demo">Demo</a>
+</p>
+
+<p align="center">
+  <img src="docs/demo.gif" width="900" alt="Elenvar in action: sign-in, the overview, live view from four cameras, an enlarged camera, device detail, the recordings timeline, monitoring and settings">
 </p>
 
 ---
 
+## How it fits together
+
+```
+ browser ──HTTPS──▶ Caddy or Traefik ──▶ Elenvar app (FastAPI + React UI, SQLite) ──▶ alerts: e-mail, webhook
+                                            │    │
+                    live view, playback ◀───┘    │ ISAPI (HTTP, digest): status, cameras, disks,
+                    over WebSocket (MSE)         │ recordings, stream settings, restart
+                         │                       ▼
+                       go2rtc ───────RTSP───────▶ NVR / DVR / IP camera ──▶ cameras
+                                                  ▲
+       updater ──Docker API──▶ pulls a newer app image and restarts the app (only when an admin asks)
+```
+
+The browser never talks to an NVR or to go2rtc. Every live stream and every recording goes through the application,
+which checks the user's session and role first. NVR passwords are stored encrypted, are never sent to the browser
+and reach go2rtc only in memory. Only the reverse proxy is exposed to the network; go2rtc and the updater stay on
+an internal Docker network.
+
 ## Features
 
-- **Live view from multiple NVRs at once**: 1 / 4 / 9 / 16 tile layouts, drag and drop, full screen, and automatic quality selection (substream in the grid, main stream when enlarged).
-- **Recordings**: search recordings on the NVR, browse a day timeline (continuous recording vs. events), play from any point, skip ±30 s and download segments.
-- **Monitoring**: periodic checks of NVR availability, camera status, disks (HDD/NAS) and clock drift.
-  - Mark the cameras that must stay online. Elenvar logs an event and sends a notification (e-mail, webhook) when they go down and when they come back.
-  - A configurable failure threshold prevents false alarms.
-- **Device settings**: change camera stream parameters (codec, resolution, frame rate, bitrate, GOP) within the camera's capabilities, and restart devices remotely.
-- **Security**:
-  - Mandatory two-factor authentication (TOTP) with recovery codes.
-  - Roles and a full audit log.
-- **Updates from the web interface**: Elenvar watches for new releases and installs them after the administrator confirms.
-- **Czech and English**: the interface follows the browser language and can be switched at any time.
+### Watch your cameras
 
-Supported devices: Hikvision NVRs (primary target), DVRs and standalone IP cameras with the ISAPI interface.
+- **Live view from many NVRs at once:** a grid of 1, 4, 9 or 16 tiles with cameras from any device; drag a camera
+  into a tile, double-click to enlarge it, or go full screen
+- **Quality that fits:** the substream in the grid and the main stream when a camera is enlarged, chosen
+  automatically or fixed by the user
+- **Plays in the browser:** H.264 everywhere; for H.265 cameras a browser can't play, Elenvar can convert the
+  video to H.264 per device
+- **Reconnects by itself** after a camera or network outage
 
-## Architecture
+### Find what happened
 
-```
-browser ──HTTPS──▶ Caddy ──▶ app (FastAPI + React UI) ──ISAPI (HTTP/Digest)──▶ NVR
-                               │
-                               └─WebSocket─▶ go2rtc ──RTSP──▶ NVR
+- **Recordings timeline:** a day per camera with continuous recording and events (motion, alarms) told apart
+- **Playback from any moment:** click the timeline, skip ±30 s, pause and continue
+- **Downloads:** any recorded segment, straight from the NVR
 
-               updater ──Docker API──▶ restarts "app" with a newer image (on request)
-```
+### Know when something breaks
 
-| Service   | Role |
-|-----------|------|
-| `caddy`   | The only service exposed to the network. HTTPS (internal CA or Let's Encrypt) and HTTP → HTTPS redirect. |
-| `app`     | API, web interface, authentication, background monitoring and video proxy. Data is stored in SQLite in the `elenvar-data` volume. |
-| `go2rtc`  | Internal RTSP → MSE (fMP4) conversion for the browser. It is not reachable outside the Docker network and keeps camera credentials in memory only (tmpfs). |
-| `updater` | The only service with access to Docker. It can do exactly one thing: pull a newer `app` image and restart the `app` container. Internal network only, protected by a shared token. |
+- **Monitoring of every device:** availability of each NVR, the state of each camera, disks (HDD and NAS) and the
+  drift of the device clock, checked every minute by default
+- **Cameras that must work:** mark which cameras are monitored; an outage and its end create an event and a
+  notification by e-mail (SMTP) or webhook (Slack, Discord, Mattermost, Home Assistant…), in Czech or English
+- **No false alarms:** a camera or device is reported only after a configurable number of failed checks
+- **Safe with wrong passwords:** when an NVR rejects the login, Elenvar stops asking until the credentials are
+  fixed, so Hikvision doesn't lock the account or the server's address
+- **Overview and history:** current issues on the overview page, the event history with acknowledgements
 
-Video always goes through the application. The browser never connects to an NVR or to go2rtc directly, and every stream is checked against the user's session and role.
+### Manage the devices
 
-## Installation
+- **NVRs, DVRs and IP cameras** over ISAPI, with a connection test before saving; cameras are discovered
+  automatically
+- **Stream settings:** codec, resolution, frame rate, bitrate and GOP of each camera, limited to what the camera
+  supports
+- **Remote restart** of a device, and its model, firmware, serial number and disks at a glance
 
-Requirements: Docker with Compose v2. The server must be able to reach the NVRs on their HTTP (ISAPI) and RTSP ports.
+### Stay secure
+
+- **Two-factor sign-in:** TOTP is required by default, with ten one-time recovery codes
+- **Roles:** viewer, operator and administrator
+- **Audit log** of sign-ins, settings changes, playback, downloads and updates
+- **Hardened by default:** Argon2id passwords, server-side sessions, CSRF protection, strict security headers and
+  containers with dropped privileges ([details](#security))
+
+### Keep it current
+
+- **Updates from the web interface:** Elenvar checks GitHub for new releases, shows the release notes and installs
+  the new version after the administrator confirms with a password
+- **Czech and English:** the interface follows the browser language and can be switched at any time
+- **Light and dark theme**, and a layout that works on phones and tablets
+
+## Quick start
+
+On any Linux server or computer with Docker and Compose v2 (amd64 or arm64). The server must reach the NVRs on
+their HTTP and RTSP ports.
 
 ```bash
 git clone https://github.com/Gelluithor/Elenvar.git && cd Elenvar
-cp .env.example .env
-# set ELENVAR_DOMAIN (the address you will open Elenvar on)
-docker compose up -d --build
-docker compose logs app | grep -A3 "Administrator account"   # initial admin password
+cp .env.example .env                                  # set ELENVAR_DOMAIN to the address you'll open Elenvar on
+docker compose pull && docker compose up -d
+docker compose logs app | grep -A3 "Administrator account"   # the first administrator's password
 ```
 
-Open `https://<ELENVAR_DOMAIN>`, sign in as `admin`, set up two-factor authentication and change the password.
-
-Released images are also published to the GitHub Container Registry, so `docker compose pull && docker compose up -d` works without building locally.
+Open `https://<ELENVAR_DOMAIN>`, sign in as `admin`, set up two-factor authentication and choose a new password.
+Then add your first NVR under *Devices*. To build the images yourself instead of pulling them, use
+`docker compose up -d --build`.
 
 ### HTTPS
 
-- **Local network** (`ELENVAR_TLS=internal`): Caddy issues a certificate from its own certificate authority, so browsers warn about it at first. To remove the warning, import the root certificate on your computers:
+- **Local network** (`ELENVAR_TLS=internal`): Caddy issues a certificate from its own certificate authority, so
+  browsers warn about it at first. To remove the warning, import the root certificate on your computers:
   `docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt ./elenvar-root.crt`
-- **Public domain** (`ELENVAR_TLS=you@example.com`): Caddy obtains a Let's Encrypt certificate automatically. Ports 80 and 443 must be reachable from the internet.
+- **Public domain** (`ELENVAR_TLS=you@example.com`): Caddy obtains a Let's Encrypt certificate automatically.
+  Ports 80 and 443 must be reachable from the internet.
 - `ELENVAR_DOMAIN` may list several addresses separated by commas, e.g. `elenvar.example.lan, 192.168.1.20`.
 
 ### Running behind Traefik
 
-If you already run [Traefik](https://traefik.io/), use it instead of the bundled Caddy. The file `docker-compose.traefik.yml` does three things:
-- turns Caddy off;
-- connects the `app` service to Traefik's network;
-- adds the router labels.
+If you already run [Traefik](https://traefik.io/), use it instead of the bundled Caddy.
+`docker-compose.traefik.yml` turns Caddy off, connects the `app` service to Traefik's network and adds the router
+labels; go2rtc and the updater stay on Elenvar's internal network.
 
-go2rtc and the updater stay on Elenvar's internal network.
-
-1. Find the name of the Docker network Traefik uses for its services (e.g. `traefik` or `proxy`):
-   ```bash
-   docker network ls
-   ```
+1. Find the Docker network Traefik uses for its services (e.g. `traefik` or `proxy`): `docker network ls`
 2. Add the Traefik settings to `.env`:
    ```bash
    ELENVAR_TRAEFIK_HOST=cameras.example.com      # host name Traefik routes to Elenvar
@@ -91,170 +142,166 @@ go2rtc and the updater stay on Elenvar's internal network.
    ELENVAR_TRAEFIK_CERTRESOLVER=letsencrypt      # your certificate resolver; leave empty if you don't use one
    ELENVAR_TRUSTED_PROXIES=172.18.0.2            # Traefik's IP address, see step 3
    ```
-3. Set `ELENVAR_TRUSTED_PROXIES` to Traefik's address. Only then does Elenvar trust the client IP that Traefik forwards; the IP is used for sign-in rate limiting and in the audit log. Without this, any other container on the Traefik network could fake its IP address.
+3. Set `ELENVAR_TRUSTED_PROXIES` to Traefik's address, so that Elenvar trusts the client IP only from Traefik
+   (it is used for sign-in rate limiting and in the audit log). Without it, any other container on the Traefik
+   network could fake its address.
    ```bash
    docker inspect -f '{{(index .NetworkSettings.Networks "traefik").IPAddress}}' traefik
    ```
-   A container's IP can change when it is recreated. Either give Traefik a fixed address in its compose file (`ipv4_address`), or use the network range (e.g. `172.18.0.0/16`) – that trusts every container on the Traefik network, which is weaker.
+   A container's IP can change when it is recreated: give Traefik a fixed address in its compose file
+   (`ipv4_address`), or use the network range (e.g. `172.18.0.0/16`), which trusts every container on that
+   network.
 4. Start Elenvar with both compose files:
    ```bash
-   docker compose -f docker-compose.yml -f docker-compose.traefik.yml up -d --build
+   docker compose -f docker-compose.yml -f docker-compose.traefik.yml up -d
    ```
-   To avoid repeating `-f` options, put `COMPOSE_FILE=docker-compose.yml:docker-compose.traefik.yml` into `.env`; plain `docker compose up -d` then uses both files. Updates from the web interface keep using both files as well.
+   With `COMPOSE_FILE=docker-compose.yml:docker-compose.traefik.yml` in `.env`, a plain `docker compose up -d` uses
+   both files. Updates from the web interface keep using them too.
 
-Requirements on the Traefik side:
-- **HTTPS is required.** The session cookie is `Secure`, so signing in over plain HTTP does not work.
-- **Pass the `Host` header through unchanged** (Traefik does this by default). Elenvar uses it to check where requests come from (CSRF protection, including WebSockets).
-- **WebSockets** for live video work out of the box.
+Traefik must serve Elenvar over **HTTPS** (the session cookie is `Secure`) and pass the **`Host` header** unchanged,
+which it does by default; Elenvar uses it to check where requests come from. WebSockets for video work out of the
+box. Tested with Traefik v3.7.
 
-Tested with Traefik v3.7.
+### Configuration
 
-### Configuration (`.env`)
+All settings are optional (`.env.example`). Everything else – check interval, failure threshold, notifications and
+their language, enforcing 2FA, data retention and update checks – is set in the web interface under *Settings*.
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `ELENVAR_DOMAIN` | `localhost` | Address(es) of the web interface. |
-| `ELENVAR_TLS` | `internal` | `internal`, or an e-mail address for Let's Encrypt. |
-| `ELENVAR_HTTP_PORT` / `ELENVAR_HTTPS_PORT` | `80` / `443` | Ports on the host. |
-| `ELENVAR_ADMIN_USERNAME` | `admin` | Name of the first administrator (first start only). |
-| `ELENVAR_ADMIN_PASSWORD` | *(generated)* | Password of the first administrator. If empty, it is generated and printed to the log. |
-| `ELENVAR_SESSION_IDLE_MINUTES` | `60` | Sign-out after inactivity (watching video counts as activity). |
-| `ELENVAR_SESSION_MAX_HOURS` | `12` | Maximum session length. |
-| `ELENVAR_SECRET_KEY` | *(generated into the volume)* | Key used to encrypt NVR and SMTP passwords. |
-| `ELENVAR_PLAYBACK_SOURCE` | `rtsp` | Set to `ffmpeg` for firmware where direct playback does not work. |
-| `ELENVAR_TRUSTED_PROXIES` | `*` | Reverse proxies whose `X-Forwarded-For` header is trusted (IPs or CIDR ranges). The default is safe with the bundled Caddy; set it when running [behind Traefik](#running-behind-traefik). |
-| `ELENVAR_TRAEFIK_*` | – | Traefik host, network, entrypoint and certificate resolver, see [Running behind Traefik](#running-behind-traefik). |
-| `ELENVAR_IMAGE`, `ELENVAR_UPDATER_IMAGE`, `ELENVAR_IMAGE_TAG` | `ghcr.io/gelluithor/…`, `latest` | Where updates are pulled from. |
-| `ELENVAR_UPDATE_REPO` | `Gelluithor/Elenvar` | GitHub repository that is checked for new releases. |
-| `TZ` | `Europe/Prague` | Server time zone. |
+| Variable | Meaning |
+|---|---|
+| `ELENVAR_DOMAIN` | address(es) of the web interface (default `localhost`) |
+| `ELENVAR_TLS` | `internal` (default) or an e-mail address for Let's Encrypt |
+| `ELENVAR_HTTP_PORT` / `ELENVAR_HTTPS_PORT` | ports on the host (default `80` / `443`) |
+| `ELENVAR_ADMIN_USERNAME` | name of the first administrator, first start only (default `admin`) |
+| `ELENVAR_ADMIN_PASSWORD` | password of the first administrator; empty = generated and printed to the log |
+| `ELENVAR_SESSION_IDLE_MINUTES` | sign-out after inactivity; watching video counts as activity (default `60`) |
+| `ELENVAR_SESSION_MAX_HOURS` | maximum session length (default `12`) |
+| `ELENVAR_SECRET_KEY` | key that encrypts NVR and SMTP passwords; empty = generated into the data volume |
+| `ELENVAR_PLAYBACK_SOURCE` | `rtsp` (default) or `ffmpeg` for firmware where direct playback doesn't work |
+| `ELENVAR_TRUSTED_PROXIES` | proxies trusted to report the client IP, IPs or CIDR ranges (default `*`, safe with the bundled Caddy) |
+| `ELENVAR_TRAEFIK_*` | host, network, entrypoint and certificate resolver, see [Running behind Traefik](#running-behind-traefik) |
+| `ELENVAR_IMAGE`, `ELENVAR_UPDATER_IMAGE`, `ELENVAR_IMAGE_TAG` | where images and updates come from (default `ghcr.io/gelluithor/…`, `latest`) |
+| `ELENVAR_UPDATE_REPO` | GitHub repository checked for new releases (default `Gelluithor/Elenvar`) |
+| `TZ` | server time zone (default `Europe/Prague`) |
 
-Everything else is changed in the web interface under **Settings**:
-- check interval and failure threshold;
-- notifications and their language;
-- enforcing 2FA;
-- data retention;
-- update checks.
+Data live in the volume `elenvar-data`: the SQLite database and the encryption key `secret.key`.
 
 ## Preparing a Hikvision NVR
 
-1. **Enable ISAPI.** On newer firmware: *Configuration → Network → Advanced → Integration Protocol → Enable Hikvision-CGI / ISAPI*.
-2. **Create a dedicated user** for Elenvar (recommended).
-   - It needs remote live view and playback permissions.
-   - To change streams and restart the device, it also needs parameter configuration and reboot permissions.
-3. **Authentication.** The default *digest* mode is fine; Elenvar supports both digest and basic.
-4. **Substream codec.** Browsers reliably play **H.264**.
-   - H.265 works in Chrome, Edge and Safari only with hardware support, and not at all in Firefox.
-   - Set the substream to H.264. You can do it directly in Elenvar: *Devices → device → Stream*.
-   - Alternatively, enable *Convert video to H.264* for the device (uses server CPU).
-5. The server must reach the NVR's HTTP (80/443) and RTSP (554) ports.
+1. **Enable ISAPI.** On newer firmware: *Configuration → Network → Advanced → Integration Protocol → Enable
+   Hikvision-CGI / ISAPI*.
+2. **Create a dedicated user** for Elenvar. It needs remote live view and playback; to change streams and restart
+   the device it also needs parameter configuration and reboot.
+3. **Authentication:** the default *digest* is fine; Elenvar supports digest and basic.
+4. **H.264 substream:** browsers reliably play H.264. H.265 works in Chrome, Edge and Safari only with hardware
+   support and not at all in Firefox. Set the substream to H.264 – directly in Elenvar under
+   *Devices → device → Stream* – or turn on *Convert video to H.264* for the device (uses server CPU).
+5. **Network:** the server must reach the NVR's HTTP (80/443) and RTSP (554) ports.
 
-> If the NVR password is wrong, Elenvar stops polling the device so that Hikvision does not lock the account or the server's IP address. Polling resumes once the credentials are fixed.
+Elenvar works with NVRs, DVRs and standalone Hikvision IP cameras that offer ISAPI. For analog DVR channels the
+camera state can't be read reliably over ISAPI, so only device availability and disks are monitored there.
 
 ## Roles
 
-| Role | Permissions |
-|------|-------------|
-| Viewer | Overview, live view, monitoring status and events. |
-| Operator | Additionally: playing and downloading recordings, acknowledging events. |
-| Administrator | Everything, including devices, users, settings and the audit log. |
+| Role | What it allows |
+|---|---|
+| viewer | overview, live view, monitoring and events |
+| operator | everything a viewer can, plus playing and downloading recordings and acknowledging events |
+| admin | everything, including devices, stream settings, restarts, users, settings, the audit log and updates |
 
-## Security
-
-- **Passwords:** hashed with **Argon2id**, minimum length 12 characters.
-- **Two-factor authentication (TOTP):** required by default. Codes can't be reused, and there are 10 one-time recovery codes, stored as hashes.
-- **Sessions:**
-  - Stored on the server, with an `__Host-` cookie that is `HttpOnly`, `Secure` and `SameSite=Strict`.
-  - A new token is issued after sign-in, which prevents session fixation.
-  - Sessions have both an idle timeout and a maximum lifetime.
-- **CSRF protection:** a token for every state-changing request, plus an `Origin` check, also on WebSockets.
-- **Sign-in rate limiting:** limits per IP and per account; an account is temporarily locked after 5 failed attempts.
-- **Stored credentials:** NVR and SMTP passwords are encrypted (Fernet/AES) and never sent to the browser. Viewers and operators don't even see device addresses.
-- **Security headers:** strict HTTP headers, including a CSP without inline scripts, HSTS, `X-Frame-Options` and `nosniff`.
-- **Containers:**
-  - The application runs as an unprivileged user.
-  - All containers drop capabilities and use `no-new-privileges`.
-  - The app and go2rtc also use read-only file systems.
-- **Audit log:** covers sign-ins, settings changes, playback, downloads and updates.
-
-Recommendation: don't expose Elenvar to the internet unless you have to. Keep it on the local network or behind a VPN.
+Users who forget their phone can sign in with a recovery code; an administrator can also reset their 2FA under
+*Users*. The last active administrator can't be removed or demoted.
 
 ## Updates
 
-Elenvar checks GitHub for a new release every 6 hours, and you can also check manually. When a new version is out:
-- an event appears in Monitoring;
-- a notification is sent;
-- a dot appears next to **Settings**.
+Every 6 hours, or when you click *Check*, Elenvar looks for a new release on GitHub. A new version shows up as an
+event, a notification and a dot next to *Settings*. *Settings → Software update → Update now* asks for your password,
+pulls the new image, restarts the app and reloads the page.
 
-Install it under *Settings → Software update → Update now*. Elenvar asks for your password, pulls the new image, restarts and reloads the page.
+Only the `updater` service has access to Docker. It can do exactly one thing – pull a newer `app` image and
+restart the `app` container with the same configuration – it is reachable only on the internal network and only
+with a shared token. Remove it from `docker-compose.yml` if you don't want updates from the web; then update with
+`git pull && docker compose pull && docker compose up -d`.
 
-- Updating from the web replaces the application image only. If a release changes `docker-compose.yml` (for example a new go2rtc version), update the compose file on the server once (`git pull && docker compose up -d`).
-- If you don't want updates from the web, remove the `updater` service from `docker-compose.yml`.
+An update from the web replaces the application image only. When a release changes the compose files (for example
+a new go2rtc version), the release notes say so and the files are updated with `git pull`.
 
-### Publishing a release
+## Backup and migration
 
-1. Bump the version in `VERSION`, update `CHANGELOG.md` and commit.
-2. Create a GitHub release with the tag `v<version>` (e.g. `v1.1.0`).
-3. The *Release* workflow builds multi-architecture images (amd64, arm64) and pushes them to `ghcr.io`.
-
-GHCR packages are private by default. Make them public, or run `docker login ghcr.io` on the server once.
-
-## Backup
-
-All data lives in the `elenvar-data` volume: the database and the encryption key `secret.key`.
-
-**Back up the key together with the database.** Without it, the stored NVR passwords cannot be decrypted.
+Back up the volume `elenvar-data`. It holds the database and `secret.key`; **keep the key with the database**,
+without it the stored NVR passwords can't be decrypted.
 
 ```bash
 docker run --rm -v elenvar_elenvar-data:/data -v "$PWD":/backup alpine tar czf /backup/elenvar-backup.tgz -C /data .
 ```
 
-If an administrator loses access to their 2FA device, another administrator can reset their 2FA under **Users**. If there is no other administrator, sign in with a recovery code.
+To move Elenvar to another server, restore the archive into the volume there before the first start.
 
-## Notes and limitations
+## Security
 
-- Recording times are shown in the NVR's time, as the device reports them. Keep the NVR clock synchronised via NTP; Elenvar monitors its drift.
-- Audio is not played in the browser, because cameras usually use G.711, which browsers do not support.
-- Downloaded recordings are in Hikvision's native format. VLC, for example, can play them.
-- Playback runs in real time (no fast-forward).
-- For analog DVR channels, camera status can't be reliably detected over ISAPI. Only device availability and disks are monitored.
+- Passwords: Argon2id, at least 12 characters. Two-factor sign-in (TOTP) is required by default; codes can't be
+  reused, and the ten recovery codes are stored as hashes.
+- Sessions live on the server, in a `__Host-` cookie (`HttpOnly`, `Secure`, `SameSite=Strict`), get a new token
+  after sign-in and have an idle timeout and a maximum lifetime. A password change signs out other sessions.
+- Every state-changing request needs a CSRF token and a matching `Origin`, WebSockets included.
+- Sign-in is rate limited per address, and an account is locked for 15 minutes after 5 failed attempts; the
+  response time doesn't reveal which accounts exist.
+- NVR and SMTP passwords are encrypted (Fernet) and never sent to the browser; viewers and operators don't even
+  see device addresses.
+- Content-Security-Policy without inline scripts, HSTS, `X-Frame-Options: DENY`, `nosniff`, `no-referrer`, no
+  caching of API responses, no public OpenAPI.
+- The app runs as an unprivileged user; all containers drop capabilities and use `no-new-privileges`; the app and
+  go2rtc have read-only file systems.
+
+Known limitations: the `updater` container has the Docker socket, which is equivalent to root on the server – it
+only accepts one fixed command with a token from the internal network, but remove it if that's not acceptable. The
+database itself isn't encrypted (the NVR and SMTP passwords in it are). Recordings are downloaded in Hikvision's
+native format (VLC plays it), playback runs in real time, audio isn't played in the browser, and recording times are
+shown in the NVR's clock, so keep the NVRs on NTP – Elenvar watches the drift. Don't expose Elenvar to the internet
+unless you have to; a LAN or a VPN is the better place for it.
 
 ## Demo
 
-Try Elenvar without real hardware: two simulated NVRs with eight cameras and sample data.
+Try Elenvar without real hardware – two simulated NVRs with eight cameras and sample data:
 
 ```bash
-dev/demo.sh        # starts the demo on http://localhost:8080 (sign in: admin / Elenvar-Demo-2026)
-dev/demo.sh down   # stops the demo and deletes its data
+dev/demo.sh        # http://localhost:8080, sign in as admin / Elenvar-Demo-2026
+dev/demo.sh down   # stop the demo and delete its data
 ```
 
-The demo runs separately from a production installation, only on the local machine, and without mandatory 2FA.
+The demo runs separately from a real installation, only on your computer, and without mandatory 2FA.
+
+## Repository layout
+
+```
+backend/app/               FastAPI app: API, ISAPI client, monitoring, video proxy, translations (i18n.py)
+frontend/src/              React + TypeScript web interface (Vite), English translation in lib/i18n-en.ts
+updater/                   the updater service
+dev/                       Hikvision NVR simulator (ISAPI + RTSP) and the demo
+tools/                     translation completeness checks
+docker-compose.yml         app, go2rtc, updater and Caddy
+docker-compose.traefik.yml running behind Traefik
+```
 
 ## Development
 
-The repository contains a Hikvision NVR simulator: ISAPI with digest authentication, and RTSP with a camera-like picture and on-screen display.
-
 ```bash
-docker compose -f docker-compose.yml -f dev/docker-compose.dev.yml up -d --build
+docker compose -f docker-compose.yml -f dev/docker-compose.dev.yml up -d --build   # with the NVR simulator
 ```
 
-In the app, add a device with the address `mock-nvr`, user `admin` and password `p@ss:w/rd`. The simulator state can be changed from the app container, e.g. `http://mock-nvr/mock/set?offline=1,3&hdd=error`.
+In the app, add a device with the address `mock-nvr`, user `admin` and password `p@ss:w/rd`. The simulator can be
+switched into trouble from the app container, e.g. `http://mock-nvr/mock/set?offline=1,3&hdd=error`.
 
-- Frontend: React + TypeScript + Vite (`frontend/`).
-- Backend: Python FastAPI (`backend/`).
-- Updater: `updater/`.
-
-### Translations
-
-Czech is the source language in the code. English translations live in:
-- `frontend/src/lib/i18n-en.ts` for the interface;
-- `backend/app/i18n.py` for server messages.
-
-Two checks make sure nothing is left untranslated:
+Czech is the source language in the code; the English translations are checked for completeness:
 
 ```bash
-node tools/check_frontend_i18n.mjs                  # needs frontend/node_modules
+node tools/check_frontend_i18n.mjs                   # needs frontend/node_modules
 cd backend && python ../tools/check_backend_i18n.py
 ```
+
+Releases: raise `VERSION`, add an entry to `CHANGELOG.md` and publish a GitHub release with the tag `v<version>`.
+GitHub Actions builds `ghcr.io/<owner>/elenvar` and `elenvar-updater` for amd64 and arm64, tagged `<version>` and
+`latest`.
 
 ## License
 
