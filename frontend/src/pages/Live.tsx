@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Eraser, Expand, Grid2x2, Grid3x3, LayoutGrid, Maximize2, Minimize2, Plus, Search, Square, VideoOff, X } from "lucide-react";
+import { Eraser, Expand, Grid2x2, Grid3x3, LayoutGrid, Maximize2, Minimize2, Plus, RotateCw, Search, Square, VideoOff, X } from "lucide-react";
 import { useAuth } from "../auth";
 import { StreamPlayer } from "../components/StreamPlayer";
-import { Alert, EmptyState, PageLoader, Segmented, StatusDot, usePolling } from "../components/ui";
+import { Alert, EmptyState, PageLoader, Segmented, StatusDot, usePolling, useToast } from "../components/ui";
 import { api, errorMessage } from "../lib/api";
-import type { Camera } from "../types";
+import type { Camera, Rotation } from "../types";
+import { hasRole } from "../lib/format";
 import { t } from "../lib/i18n";
 
 type Quality = "auto" | "main" | "sub";
@@ -51,6 +52,8 @@ const LAYOUT_ICON: Record<LayoutSize, ReactNode> = {
 export function LivePage() {
   const { user } = useAuth();
   const username = user?.username ?? "";
+  const canRotate = hasRole(user?.role, "operator");
+  const toast = useToast();
   const [cameras, setCameras] = useState<Camera[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [state, setState] = useState<SavedState>(() => loadState(username));
@@ -96,6 +99,18 @@ export function LivePage() {
       setParams(params, { replace: true });
     }
   }, [params, setParams]);
+
+  const rotate = async (cam: Camera) => {
+    const rotation = ((cam.rotation + 90) % 360) as Rotation;
+    setCameras((list) => list?.map((c) => (c.id === cam.id ? { ...c, rotation } : c)) ?? list);
+    try {
+      const updated = await api<Camera>(`/api/cameras/${cam.id}`, { method: "PATCH", body: { rotation } });
+      setCameras((list) => list?.map((c) => (c.id === updated.id ? updated : c)) ?? list);
+    } catch (err) {
+      setCameras((list) => list?.map((c) => (c.id === cam.id ? { ...c, rotation: cam.rotation } : c)) ?? list);
+      toast(errorMessage(err), "error");
+    }
+  };
 
   const byId = useMemo(() => new Map((cameras ?? []).map((c) => [c.id, c])), [cameras]);
 
@@ -249,12 +264,17 @@ export function LivePage() {
                 >
                   {cam ? (
                     <>
-                      <StreamPlayer key={`${cam.id}-${quality}`} path={`/api/cameras/${cam.id}/live?quality=${quality}`} live autoReconnect />
+                      <StreamPlayer key={`${cam.id}-${quality}`} path={`/api/cameras/${cam.id}/live?quality=${quality}`} live autoReconnect rotation={cam.rotation} />
                       <div className="tile-bar">
                         <StatusDot state={cam.state} />
                         <span className="tile-title">{cam.name}</span>
                         <span className="tile-sub">{cam.nvr_name}</span>
                         <span className="toolbar-spacer" />
+                        {canRotate && (
+                          <button type="button" className="icon-btn" title={t("Otočit o 90°")} onClick={(e) => { e.stopPropagation(); void rotate(cam); }}>
+                            <RotateCw size={15} />
+                          </button>
+                        )}
                         <button type="button" className="icon-btn" title={maximized === slot ? t("Zpět do mřížky") : t("Zvětšit")} onClick={(e) => { e.stopPropagation(); setMaximized(maximized === slot ? null : slot); }}>
                           {maximized === slot ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
                         </button>

@@ -60,6 +60,10 @@ an internal Docker network.
   automatically or fixed by the user
 - **Plays in the browser:** H.264 everywhere; for H.265 cameras a browser can't play, Elenvar can convert the
   video to H.264 per device
+- **Works with older NVRs:** firmware whose RTSP sign-in the direct connection can't handle is detected
+  automatically and read through FFmpeg instead, and a video test explains what a device offers
+- **Rotated cameras:** turn the picture by 90, 180 or 270 degrees for cameras mounted on their side; it applies to
+  live view, recordings and previews
 - **Reconnects by itself** after a camera or network outage
 
 ### Find what happened
@@ -83,6 +87,7 @@ an internal Docker network.
 
 - **NVRs, DVRs and IP cameras** over ISAPI, with a connection test before saving; cameras are discovered
   automatically
+- **Camera names of your own:** rename a camera in Elenvar while the name on the NVR stays as it is
 - **Stream settings:** codec, resolution, frame rate, bitrate and GOP of each camera, limited to what the camera
   supports
 - **Remote restart** of a device, and its model, firmware, serial number and disks at a glance
@@ -192,7 +197,10 @@ Data live in the volume `elenvar-data`: the SQLite database and the encryption k
    Hikvision-CGI / ISAPI*.
 2. **Create a dedicated user** for Elenvar. It needs remote live view and playback; to change streams and restart
    the device it also needs parameter configuration and reboot.
-3. **Authentication:** the default *digest* is fine; Elenvar supports digest and basic.
+3. **Authentication:** the default *digest* is fine; Elenvar supports digest and basic. Some older firmware offers
+   RTSP sign-in in a way the direct connection can't use – previews and downloads work, but live view and playback
+   report a wrong user name or password. With *Video connection* left on *Automatic*, Elenvar detects this and reads
+   the video through FFmpeg; *Devices → device → Test video* shows what the device offers.
 4. **H.264 substream:** browsers reliably play H.264. H.265 works in Chrome, Edge and Safari only with hardware
    support and not at all in Firefox. Set the substream to H.264 – directly in Elenvar under
    *Devices → device → Stream* – or turn on *Convert video to H.264* for the device (uses server CPU).
@@ -206,8 +214,8 @@ camera state can't be read reliably over ISAPI, so only device availability and 
 | Role | What it allows |
 |---|---|
 | viewer | overview, live view, monitoring and events |
-| operator | everything a viewer can, plus playing and downloading recordings and acknowledging events |
-| admin | everything, including devices, stream settings, restarts, users, settings, the audit log and updates |
+| operator | everything a viewer can, plus playing and downloading recordings, acknowledging events and rotating camera pictures |
+| admin | everything, including devices, camera names, stream settings, restarts, users, settings, the audit log and updates |
 
 Users who forget their phone can sign in with a recovery code; an administrator can also reset their 2FA under
 *Users*. The last active administrator can't be removed or demoted.
@@ -262,7 +270,8 @@ unless you have to; a LAN or a VPN is the better place for it.
 
 ## Demo
 
-Try Elenvar without real hardware – two simulated NVRs with eight cameras and sample data:
+Try Elenvar without real hardware – three simulated NVRs (one of them with older firmware) with ten cameras and
+sample data:
 
 ```bash
 dev/demo.sh        # http://localhost:8080, sign in as admin / Elenvar-Demo-2026

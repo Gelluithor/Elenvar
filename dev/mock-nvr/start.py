@@ -65,24 +65,34 @@ def main() -> None:
         streams[f"Streaming/Channels/{i}01"] = stream(name, 1280, 720, 15, i)
         streams[f"Streaming/Channels/{i}02"] = stream(name, 640, 360, 12, i)
         streams[f"Streaming/tracks/{i}01"] = stream(name, 1280, 720, 15, i, " · ZÁZNAM")
-    config = {
-        "api": {"listen": "127.0.0.1:1984"},
-        "webrtc": {"listen": ""},
-        "rtsp": {
+    # MOCK_LEGACY_RTSP=1: přihlašování k RTSP jako starší firmware (viz legacy_rtsp.py).
+    legacy = os.environ.get("MOCK_LEGACY_RTSP", "0") == "1"
+    rtsp_config = (
+        {"listen": "127.0.0.1:8554"}
+        if legacy
+        else {
             "listen": ":554",
             "username": os.environ.get("MOCK_USER", "admin"),
             "password": os.environ.get("MOCK_PASSWORD", "p@ss:w/rd"),
-        },
+        }
+    )
+    config = {
+        "api": {"listen": "127.0.0.1:1984"},
+        "webrtc": {"listen": ""},
+        "rtsp": rtsp_config,
         "log": {"level": "warn"},
         "streams": streams,
     }
     with open("/tmp/go2rtc.yaml", "w", encoding="utf-8") as fh:
         json.dump(config, fh, ensure_ascii=False)
     rtsp = subprocess.Popen(["go2rtc", "-config", "/tmp/go2rtc.yaml"])
+    proxy = subprocess.Popen([sys.executable, "-u", "/mock/legacy_rtsp.py"]) if legacy else None
     try:
         os.execvp(sys.executable, [sys.executable, "-u", "/mock/mock_isapi.py"])
     finally:
         rtsp.terminate()
+        if proxy is not None:
+            proxy.terminate()
 
 
 if __name__ == "__main__":

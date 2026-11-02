@@ -13,6 +13,7 @@ ADMIN = ("admin", "Elenvar-Demo-2026")
 DEVICES = [
     {"name": "Areál Brno", "host": "mock-areal", "notes": "Hlavní areál, 4 kamery."},
     {"name": "Sklad Ostrava", "host": "mock-sklad", "notes": "Pobočka, nakládací rampa."},
+    {"name": "Pobočka Zlín", "host": "mock-legacy", "notes": "Starší NVR – video jde přes kompatibilní režim."},
 ]
 USERS = [
     {"username": "jnovak", "full_name": "Jan Novák", "role": "operator", "password": "Operator-Demo-2026"},
@@ -51,7 +52,7 @@ def main() -> None:
     nvrs = {n["name"]: n["id"] for n in c.get("/api/nvrs").json()}
     for _ in range(30):
         cams = c.get("/api/cameras").json()
-        if len(cams) >= 8:
+        if len(cams) >= 10:
             break
         time.sleep(1)
 

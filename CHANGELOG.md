@@ -2,6 +2,27 @@
 
 All notable changes to Elenvar are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] – 2026-11-02
+
+### Added
+- Support for older NVR firmware whose RTSP sign-in go2rtc cannot complete (previews and downloads worked, but live
+  view and playback reported a wrong user name or password). A new *Video connection* setting per device –
+  *Automatic*, *Direct* or *Compatible* – reads such video through FFmpeg; *Automatic* detects it by itself.
+- *Test video* in the device detail: checks the RTSP sign-in both ways, shows the sign-in methods the device offers
+  and the video codec, and says what to change if video can't play.
+- Rotating the camera picture by 90, 180 or 270 degrees for live view, recordings and previews. Operators can rotate
+  a camera straight from its live tile.
+- Renaming cameras in Elenvar; the name on the NVR stays unchanged and can be restored with one click.
+- The demo includes a third NVR that simulates older firmware.
+
+### Changed
+- A rejected video sign-in now explains how to fix it for older NVRs.
+
+### Fixed
+- In the English interface, video errors that retrying cannot fix (unsupported codec, rejected sign-in) are no
+  longer retried over and over.
+- The sign-in logo blinks without its eye jumping in browsers that handle SVG transforms differently.
+
 ## [1.1.1] – 2026-10-23
 
 ### Added
@@ -73,6 +94,7 @@ Initial release.
 - Hikvision NVR simulator (ISAPI with digest authentication, RTSP with a camera-like picture and on-screen display).
 - Demo with two NVRs and sample data (`dev/demo.sh`).
 
+[1.2.0]: https://github.com/Gelluithor/Elenvar/releases/tag/v1.2.0
 [1.1.1]: https://github.com/Gelluithor/Elenvar/releases/tag/v1.1.1
 [1.1.0]: https://github.com/Gelluithor/Elenvar/releases/tag/v1.1.0
 [1.0.0]: https://github.com/Gelluithor/Elenvar/releases/tag/v1.0.0

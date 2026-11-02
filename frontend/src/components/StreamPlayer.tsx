@@ -3,6 +3,7 @@ import { RefreshCw, VideoOff } from "lucide-react";
 import { MsePlayer, type PlayerStatus } from "../lib/msePlayer";
 import { Spinner } from "./ui";
 import { t } from "../lib/i18n";
+import type { Rotation } from "../types";
 
 interface Props {
   /** Cesta WebSocketu, např. /api/cameras/3/live?quality=sub */
@@ -12,13 +13,16 @@ interface Props {
   autoReconnect?: boolean;
   onStatus?: (status: PlayerStatus) => void;
   onTime?: (seconds: number) => void;
+  /** Otočení obrazu ve stupních (jen zobrazení). */
+  rotation?: Rotation;
   className?: string;
 }
 
 const RECONNECT_DELAYS = [2000, 4000, 8000, 15000, 30000];
-const PERMANENT_ERROR = /kodek|formát|nepodporuje|neumí|oprávnění|neexistuje|přihlášeni|odmítlo/i;
+// Česky i anglicky – hláška je už přeložená do jazyka rozhraní.
+const PERMANENT_ERROR = /kodek|formát|nepodporuje|neumí|oprávnění|neexistuje|přihlášeni|odmítlo|codec|not support|cannot play|permission|does not exist|not signed in|rejected/i;
 
-export function StreamPlayer({ path, live, autoReconnect = false, onStatus, onTime, className }: Props) {
+export function StreamPlayer({ path, live, autoReconnect = false, onStatus, onTime, rotation = 0, className }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [status, setStatus] = useState<PlayerStatus>("connecting");
   const [message, setMessage] = useState<string>("");
@@ -68,8 +72,8 @@ export function StreamPlayer({ path, live, autoReconnect = false, onStatus, onTi
   }, [path, live, autoReconnect, attempt]);
 
   return (
-    <div className={`player player-${status} ${className ?? ""}`}>
-      <video ref={videoRef} muted playsInline autoPlay disablePictureInPicture />
+    <div className={`player rot-frame player-${status} ${className ?? ""}`}>
+      <video ref={videoRef} className={rotation ? `rot-${rotation}` : undefined} muted playsInline autoPlay disablePictureInPicture />
       {status === "connecting" && (
         <div className="player-overlay">
           <Spinner size={26} />

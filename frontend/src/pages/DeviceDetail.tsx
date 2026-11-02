@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Film, ImageOff, Pencil, Power, RefreshCw, SlidersHorizontal, Trash2, Video } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Film, ImageOff, Pencil, Power, RefreshCw, SlidersHorizontal, Stethoscope, Trash2, Video, XCircle } from "lucide-react";
 import { useAuth } from "../auth";
 import {
   Alert,
@@ -18,13 +18,13 @@ import {
 } from "../components/ui";
 import { api, errorMessage } from "../lib/api";
 import { formatBytesMb, formatDateTime, formatRelative, hasRole } from "../lib/format";
-import type { Camera, Nvr, StreamSettings } from "../types";
+import type { Camera, Nvr, Rotation, StreamMode, StreamSettings, VideoTest } from "../types";
 import { NvrFormModal } from "./Devices";
-import { t } from "../lib/i18n";
+import { N_, t } from "../lib/i18n";
 
 const HEALTHY = new Set(["ok", "idle", "standby", "sleeping", "sleep"]);
 
-function Snapshot({ camera, refreshKey }: { camera: Camera; refreshKey: number }) {
+function Snapshot({ camera, refreshKey, rotation = camera.rotation }: { camera: Camera; refreshKey: number; rotation?: Rotation }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [refreshKey]);
   if (camera.state !== "online" || failed) {
@@ -35,13 +35,203 @@ function Snapshot({ camera, refreshKey }: { camera: Camera; refreshKey: number }
     );
   }
   return (
-    <img
-      className="thumb"
-      src={`/api/cameras/${camera.id}/snapshot?t=${refreshKey}`}
-      alt={t("Náhled {name}", { name: camera.name })}
-      loading="lazy"
-      onError={() => setFailed(true)}
-    />
+    <span className="thumb rot-frame">
+      <img
+        className={`thumb-img rot-${rotation}`}
+        src={`/api/cameras/${camera.id}/snapshot?t=${refreshKey}`}
+        alt={t("Náhled {name}", { name: camera.name })}
+        loading="lazy"
+        onError={() => setFailed(true)}
+      />
+    </span>
+  );
+}
+
+const ROTATIONS: Rotation[] = [0, 90, 180, 270];
+
+function CameraModal({
+  camera,
+  canRename,
+  refreshKey,
+  onClose,
+  onSaved,
+}: {
+  camera: Camera;
+  canRename: boolean;
+  refreshKey: number;
+  onClose: () => void;
+  onSaved: (camera: Camera) => void;
+}) {
+  const [name, setName] = useState(camera.custom_name || camera.device_name);
+  const [rotation, setRotation] = useState<Rotation>(camera.rotation);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const trimmed = name.trim();
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const body: { rotation: Rotation; custom_name?: string } = { rotation };
+      if (canRename) body.custom_name = trimmed === camera.device_name ? "" : trimmed;
+      onSaved(await api<Camera>(`/api/cameras/${camera.id}`, { method: "PATCH", body }));
+    } catch (err) {
+      setError(errorMessage(err));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal
+      title={t("Upravit kameru")}
+      onClose={onClose}
+      footer={
+        <>
+          <button type="button" className="btn btn-ghost" onClick={onClose}>
+            {t("Zrušit")}
+          </button>
+          <button type="submit" form="camera-form" className="btn btn-primary" disabled={busy || (canRename && !trimmed)}>
+            {busy ? <Spinner size={16} /> : null} {t("Uložit")}
+          </button>
+        </>
+      }
+    >
+      <form id="camera-form" className="form" onSubmit={submit}>
+        <div className="camera-preview">
+          <Snapshot camera={camera} refreshKey={refreshKey} rotation={rotation} />
+        </div>
+        <div className="field">
+          <label htmlFor="cam-name">{t("Název")}</label>
+          <input
+            id="cam-name"
+            className="input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={128}
+            placeholder={camera.device_name}
+            disabled={!canRename}
+            required={canRename}
+          />
+          <div className="field-hint">
+            {t("Na zařízení: {name}. Název se změní jen v Elenvaru.", { name: camera.device_name || "—" })}{" "}
+            {canRename && trimmed !== camera.device_name && camera.device_name && (
+              <button type="button" className="link-btn" onClick={() => setName(camera.device_name)}>
+                {t("Použít název ze zařízení")}
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="field">
+          <span className="field-label">{t("Otočení obrazu")}</span>
+          <Segmented<Rotation>
+            full
+            label={t("Otočení obrazu")}
+            value={rotation}
+            onChange={setRotation}
+            options={ROTATIONS.map((r) => ({ value: r, label: `${r}°` }))}
+          />
+          <div className="field-hint">{t("Platí pro živý obraz, záznamy i náhledy u všech uživatelů.")}</div>
+        </div>
+        {error && <Alert>{error}</Alert>}
+      </form>
+    </Modal>
+  );
+}
+
+const MODE_LABEL: Record<StreamMode, string> = {
+  auto: N_("Automaticky"),
+  direct: N_("Přímo"),
+  compat: N_("Kompatibilní (FFmpeg)"),
+};
+
+const VIA_LABEL: Record<VideoTest["via"], string> = {
+  direct: N_("Přímé spojení"),
+  ffmpeg: N_("Přes FFmpeg (kompatibilní režim)"),
+  transcode: N_("Převodem na H.264"),
+};
+
+function Check({ ok }: { ok: boolean }) {
+  return ok ? (
+    <span className="state-check ok">
+      <CheckCircle2 size={15} aria-hidden /> {t("Ano")}
+    </span>
+  ) : (
+    <span className="state-check bad">
+      <XCircle size={15} aria-hidden /> {t("Ne")}
+    </span>
+  );
+}
+
+function VideoPanel({ nvr }: { nvr: Nvr }) {
+  const toast = useToast();
+  const [testing, setTesting] = useState(false);
+  const [result, setResult] = useState<VideoTest | null>(null);
+
+  const run = async () => {
+    setTesting(true);
+    try {
+      setResult(await api<VideoTest>(`/api/nvrs/${nvr.id}/video-test`, { method: "POST", body: {} }));
+    } catch (err) {
+      toast(errorMessage(err), "error");
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  return (
+    <section className="panel">
+      <div className="panel-header">
+        <h2>{t("Video")}</h2>
+        <button type="button" className="btn btn-ghost btn-small" onClick={() => void run()} disabled={testing || nvr.status !== "online"}>
+          {testing ? <Spinner size={14} /> : <Stethoscope size={14} />} {t("Otestovat video")}
+        </button>
+      </div>
+      <dl className="info-list">
+        <dt>{t("Připojení")}</dt>
+        <dd>{t(MODE_LABEL[nvr.stream_mode] ?? MODE_LABEL.auto)}</dd>
+        <dt>{t("Převod na H.264")}</dt>
+        <dd>{nvr.transcode ? t("Zapnut") : t("Vypnut")}</dd>
+      </dl>
+      {result && (
+        <div className="video-test">
+          <dl className="info-list">
+            <dt>{t("Testovaná kamera")}</dt>
+            <dd>{result.camera}</dd>
+            {result.reachable && (
+              <>
+                <dt>{t("Zařízení nabízí přihlášení")}</dt>
+                <dd>{result.auth_offered.length ? result.auth_offered.join(", ") : t("bez přihlášení")}</dd>
+                <dt>{t("Přímé spojení")}</dt>
+                <dd><Check ok={result.direct_ok} /></dd>
+                <dt>{t("Kompatibilní režim")}</dt>
+                <dd><Check ok={result.compat_ok} /></dd>
+              </>
+            )}
+            {result.video_codec && (
+              <>
+                <dt>{t("Kodek videa")}</dt>
+                <dd>
+                  {result.video_codec}
+                  {result.audio_codec ? ` · ${t("zvuk")} ${result.audio_codec}` : ""}
+                </dd>
+              </>
+            )}
+            {result.compat_ok && (
+              <>
+                <dt>{t("Video poběží")}</dt>
+                <dd>{t(VIA_LABEL[result.via])}</dd>
+              </>
+            )}
+          </dl>
+          <Alert kind={result.ok ? "success" : "warning"}>
+            {result.advice.map((a) => (
+              <div key={a}>{a}</div>
+            ))}
+          </Alert>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -243,6 +433,7 @@ export function DeviceDetailPage() {
   const [editing, setEditing] = useState(false);
   const [confirm, setConfirm] = useState<"reboot" | "delete" | null>(null);
   const [streamCamera, setStreamCamera] = useState<Camera | null>(null);
+  const [editCamera, setEditCamera] = useState<Camera | null>(null);
   const [snapKey, setSnapKey] = useState(() => Date.now());
 
   const load = useCallback(async () => {
@@ -357,12 +548,6 @@ export function DeviceDetailPage() {
             <dd>{formatRelative(nvr.last_seen_at)}</dd>
             <dt>{t("Poslední kontrola")}</dt>
             <dd>{formatRelative(nvr.last_poll_at)}</dd>
-            {nvr.transcode && (
-              <>
-                <dt>{t("Video")}</dt>
-                <dd>{t("Převod na H.264 zapnut")}</dd>
-              </>
-            )}
             {isAdmin && nvr.notes && (
               <>
                 <dt>{t("Poznámka")}</dt>
@@ -411,6 +596,8 @@ export function DeviceDetailPage() {
         </section>
       </div>
 
+      {isAdmin && <VideoPanel nvr={nvr} />}
+
       <section className="panel">
         <div className="panel-header">
           <h2>{t("Kamery (")}{cameras.length})</h2>
@@ -438,6 +625,7 @@ export function DeviceDetailPage() {
                     </td>
                     <td>
                       <strong>{c.name}</strong>
+                      {c.custom_name && c.device_name && <div className="muted small">{t("Na zařízení: {name}", { name: c.device_name })}</div>}
                       <div className="muted small">
                         {t("Kanál")} {c.channel}
                         {c.ip_address ? ` · ${c.ip_address}` : ""}
@@ -459,6 +647,11 @@ export function DeviceDetailPage() {
                         <Link className="btn btn-ghost btn-small" to={`/playback?camera=${c.id}`}>
                           <Film size={14} /> {t("Záznamy")}
                         </Link>
+                      )}
+                      {canPlayback && (
+                        <button type="button" className="btn btn-ghost btn-small" onClick={() => setEditCamera(c)}>
+                          <Pencil size={14} /> {t("Upravit")}
+                        </button>
                       )}
                       {isAdmin && (
                         <button type="button" className="btn btn-ghost btn-small" onClick={() => setStreamCamera(c)} disabled={nvr.status !== "online"}>
@@ -510,6 +703,19 @@ export function DeviceDetailPage() {
             await api(`/api/nvrs/${nvrId}`, { method: "DELETE" });
             toast(t("Zařízení bylo smazáno."));
             navigate("/devices");
+          }}
+        />
+      )}
+      {editCamera && (
+        <CameraModal
+          camera={editCamera}
+          canRename={isAdmin}
+          refreshKey={snapKey}
+          onClose={() => setEditCamera(null)}
+          onSaved={(updated) => {
+            setEditCamera(null);
+            setNvr((n) => (n ? { ...n, cameras: n.cameras?.map((c) => (c.id === updated.id ? updated : c)) } : n));
+            toast(t("Kamera byla uložena."));
           }}
         />
       )}

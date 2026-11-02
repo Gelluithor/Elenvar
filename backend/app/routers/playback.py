@@ -12,15 +12,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, WebSocket
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .. import go2rtc
+from .. import go2rtc, video
 from ..audit import add_audit
-from ..config import settings
 from ..db import SessionLocal, get_db
 from ..deps import AuthContext, require_operator, ws_authenticate
 from ..hikvision import IsapiError, playback_rtsp_path
 from ..i18n import tr
 from ..models import Camera, Nvr
-from ..nvr_service import client_for, connection_for
+from ..nvr_service import client_for
 from ..streaming import proxy_stream
 
 router = APIRouter(prefix="/api/playback", tags=["playback"])
@@ -113,11 +112,11 @@ async def download(
 
     add_audit(
         db, request, "recording_download",
-        f"{nvr.name} / {cam.name}: {segment.start:%d.%m.%Y %H:%M:%S} – {segment.end:%H:%M:%S}", user=ctx.user,
+        f"{nvr.name} / {cam.display_name}: {segment.start:%d.%m.%Y %H:%M:%S} – {segment.end:%H:%M:%S}", user=ctx.user,
     )
     await db.commit()
 
-    filename = f"{_safe_filename(nvr.name)}_{_safe_filename(cam.name)}_{segment.start:%Y%m%d_%H%M%S}.mp4"
+    filename = f"{_safe_filename(nvr.name)}_{_safe_filename(cam.display_name)}_{segment.start:%Y%m%d_%H%M%S}.mp4"
     context = client.download(segment.playback_uri)
     try:
         resp = await context.__aenter__()
@@ -141,13 +140,8 @@ async def download(
     return StreamingResponse(body(), media_type="video/mp4", headers=headers)
 
 
-def playback_source(nvr: Nvr, channel: int, start: datetime) -> str:
-    url = connection_for(nvr).rtsp_url(playback_rtsp_path(channel, start, start + PLAYBACK_WINDOW))
-    if nvr.transcode:
-        return f"ffmpeg:{url}#video=h264"
-    if settings.playback_source == "ffmpeg":
-        return f"ffmpeg:{url}#video=copy"
-    return f"{url}#backchannel=0"
+def playback_path(channel: int, start: datetime) -> str:
+    return playback_rtsp_path(channel, start, start + PLAYBACK_WINDOW)
 
 
 @router.websocket("/{camera_id}/stream")
@@ -172,12 +166,12 @@ async def playback_stream(websocket: WebSocket, camera_id: int, start: str):
             await websocket.close(code=4404)
             return
         try:
-            source = playback_source(nvr, cam.channel, start_dt)
+            source = await video.source_for(nvr, playback_path(cam.channel, start_dt), playback=True)
         except RuntimeError:
             await websocket.close(code=1011)
             return
         add_audit(
-            db, websocket, "recording_playback", f"{nvr.name} / {cam.name}: od {start_dt:%d.%m.%Y %H:%M:%S}",
+            db, websocket, "recording_playback", f"{nvr.name} / {cam.display_name}: od {start_dt:%d.%m.%Y %H:%M:%S}",
             user=ctx.user,
         )
         await db.commit()

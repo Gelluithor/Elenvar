@@ -37,3 +37,18 @@ services:
       MOCK_OFFLINE: ""
       MOCK_NOISE: "0"
     networks: [backend]
+
+  # Older NVR firmware: RTSP sign-in that go2rtc cannot do directly (see dev/mock-nvr/legacy_rtsp.py).
+  mock-legacy:
+    build: ./dev/mock-nvr
+    image: elenvar-mock-nvr:dev
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Prague
+      MOCK_DEVICE_NAME: "Pobočka Zlín"
+      MOCK_MODEL: "DS-7604NI-E1"
+      MOCK_CHANNELS: "Vchod,Pokladna"
+      MOCK_OFFLINE: ""
+      MOCK_NOISE: "0"
+      MOCK_LEGACY_RTSP: "1"
+    networks: [backend]

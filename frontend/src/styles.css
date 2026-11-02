@@ -463,7 +463,8 @@ select.input {
   gap: 6px;
   min-width: 0;
 }
-.field label {
+.field label,
+.field-label {
   font-size: 13px;
   font-weight: 500;
   color: var(--label-2);
@@ -1407,6 +1408,17 @@ a.stat-card:active {
   outline: 1px solid var(--img-outline);
   outline-offset: -1px;
 }
+.thumb-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Otočený obraz na výšku by se ořezal na úzký pruh – zobrazit celý. */
+.thumb-img.rot-90,
+.thumb-img.rot-270 {
+  object-fit: contain;
+}
 .thumb-empty {
   display: grid;
   place-items: center;
@@ -1424,6 +1436,32 @@ a.stat-card:active {
   height: 100%;
   overflow: hidden;
   background: var(--video-bg);
+}
+
+/* Otočení obrazu kamery. Rámeček je kontejner, takže otočený obraz na výšku
+   dostane prohozené rozměry (100cqh × 100cqw) a vyplní ho stejně jako neotočený. */
+.rot-frame {
+  position: relative;
+  overflow: hidden;
+  container-type: size;
+}
+.rot-90,
+.rot-270 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100cqh !important;
+  height: 100cqw !important;
+  translate: -50% -50%;
+}
+.rot-90 {
+  rotate: 90deg;
+}
+.rot-180 {
+  rotate: 180deg;
+}
+.rot-270 {
+  rotate: 270deg;
 }
 .player video {
   display: block;
@@ -2298,4 +2336,45 @@ a.stat-card:active {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ==========================================================================
+   Úprava kamery a test videa
+   ========================================================================== */
+.camera-preview {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--r-sm);
+  background: var(--video-bg);
+}
+.camera-preview .thumb {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
+.field .segmented.full {
+  margin-bottom: 0;
+}
+.field-hint .link-btn {
+  font-size: inherit;
+}
+.video-test {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--separator);
+}
+.state-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 500;
+}
+.state-check.ok {
+  color: var(--green-text);
+}
+.state-check.bad {
+  color: var(--red-text);
 }

@@ -178,7 +178,7 @@ export function PlaybackPage() {
           <div className="panel">
             <div className="playback-player">
               {playStart ? (
-                <StreamPlayer key={playStart} path={`/api/playback/${cameraId}/stream?start=${encodeURIComponent(playStart)}`} live={false} onTime={onTime} />
+                <StreamPlayer key={playStart} path={`/api/playback/${cameraId}/stream?start=${encodeURIComponent(playStart)}`} live={false} onTime={onTime} rotation={camera?.rotation} />
               ) : (
                 <div className="player player-idle">
                   <Film size={30} />

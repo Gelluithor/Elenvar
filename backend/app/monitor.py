@@ -221,12 +221,12 @@ class Monitor:
                 await db.flush()
                 self._event(
                     db, out, cfg, "info", "camera_added", nvr,
-                    f"{nvr.name}: nalezena kamera „{cam.name}“ (kanál {cam.channel})", camera=cam, send=False,
+                    f"{nvr.name}: nalezena kamera „{cam.display_name}“ (kanál {cam.channel})", camera=cam, send=False,
                 )
                 if ch.online is False:
                     self._event(
                         db, out, cfg, "warning", "camera_offline", nvr,
-                        f"{nvr.name}: kamera „{cam.name}“ (kanál {cam.channel}) je offline", camera=cam,
+                        f"{nvr.name}: kamera „{cam.display_name}“ (kanál {cam.channel}) je offline", camera=cam,
                     )
                 continue
 
@@ -243,7 +243,7 @@ class Monitor:
                     if was_offline and cam.monitored:
                         self._event(
                             db, out, cfg, "info", "camera_online", nvr,
-                            f"{nvr.name}: kamera „{cam.name}“ (kanál {cam.channel}) je opět online",
+                            f"{nvr.name}: kamera „{cam.display_name}“ (kanál {cam.channel}) je opět online",
                             camera=cam, recovery=True,
                         )
             elif ch.online is False:
@@ -255,7 +255,7 @@ class Monitor:
                     if cam.monitored:
                         self._event(
                             db, out, cfg, "warning", "camera_offline", nvr,
-                            f"{nvr.name}: kamera „{cam.name}“ (kanál {cam.channel}) je offline"
+                            f"{nvr.name}: kamera „{cam.display_name}“ (kanál {cam.channel}) je offline"
                             + (f" ({ch.detail})" if ch.detail else ""),
                             camera=cam,
                         )
@@ -272,7 +272,7 @@ class Monitor:
                 continue
             self._event(
                 db, out, cfg, "info", "camera_removed", nvr,
-                f"{nvr.name}: kamera „{cam.name}“ (kanál {channel}) byla odebrána z konfigurace NVR",
+                f"{nvr.name}: kamera „{cam.display_name}“ (kanál {channel}) byla odebrána z konfigurace NVR",
                 send=cam.monitored,
             )
             self._cam_failures.pop(cam.id, None)
@@ -332,7 +332,7 @@ class Monitor:
         )
         payload = {"severity": severity, "kind": kind, "nvr": nvr.name, "nvr_id": nvr.id, "message": message}
         if camera is not None:
-            payload.update({"camera": camera.name, "channel": camera.channel})
+            payload.update({"camera": camera.display_name, "channel": camera.channel})
         out.append((f"[Elenvar] {text}", body, payload))
 
     def _dispatch(self, notifications: list[Notification]) -> None:

@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .. import go2rtc
+from .. import go2rtc, video
 from ..audit import add_audit, client_ip
 from ..db import get_db
 from ..deps import AuthContext, has_role, require_admin, require_viewer
@@ -22,12 +22,14 @@ from ..hikvision import (
     Connection,
     HikvisionClient,
     IsapiError,
+    live_rtsp_path,
     main_stream_id,
     sub_stream_id,
 )
 from ..models import Camera, Nvr
 from ..monitor import monitor
-from ..nvr_service import client_for
+from ..nvr_service import client_for, connection_for
+from ..rtsp_probe import probe
 from ..ratelimit import test_connection_limiter
 from ..security import decrypt, encrypt
 from ..views import camera_view, nvr_view
@@ -36,6 +38,9 @@ router = APIRouter(prefix="/api/nvrs", tags=["nvrs"])
 
 _HOSTNAME_RE = re.compile(r"^(?=.{1,253}$)[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*$")
 CONNECTION_FIELDS = {"host", "http_port", "rtsp_port", "use_https", "verify_tls", "username", "password"}
+# Změna těchto polí vyžaduje nové spojení na video (go2rtc streamy se zahodí).
+VIDEO_FIELDS = CONNECTION_FIELDS | {"transcode", "stream_mode"}
+StreamMode = Literal["auto", "direct", "compat"]
 _background: set[asyncio.Task] = set()
 
 
@@ -62,6 +67,7 @@ class NvrBase(BaseModel):
     username: str = Field(min_length=1, max_length=128)
     enabled: bool = True
     transcode: bool = False
+    stream_mode: StreamMode = "auto"
     notes: str = Field(default="", max_length=2000)
 
     @field_validator("host")
@@ -85,6 +91,7 @@ class NvrUpdate(BaseModel):
     password: str | None = Field(default=None, min_length=1, max_length=256)
     enabled: bool | None = None
     transcode: bool | None = None
+    stream_mode: StreamMode | None = None
     notes: str | None = Field(default=None, max_length=2000)
 
     @field_validator("host")
@@ -225,7 +232,7 @@ async def update_nvr(
 ):
     nvr = await _get_nvr(db, nvr_id)
     changes = body.model_dump(exclude_unset=True)
-    for key in ("name", "host", "http_port", "rtsp_port", "use_https", "verify_tls", "username", "enabled", "transcode", "notes"):
+    for key in ("name", "host", "http_port", "rtsp_port", "use_https", "verify_tls", "username", "enabled", "transcode", "stream_mode", "notes"):
         if key in changes and changes[key] is None:
             changes.pop(key)
     connection_changed = False
@@ -237,12 +244,13 @@ async def update_nvr(
             continue
         if getattr(nvr, key) != value:
             setattr(nvr, key, value)
-            if key in CONNECTION_FIELDS or key == "transcode":
+            if key in VIDEO_FIELDS:
                 connection_changed = True
     if connection_changed:
         nvr.status = "unknown"
         nvr.status_message = ""
         monitor.forget_nvr(nvr.id)
+        video.forget(nvr.id)
     changed_names = ", ".join(k for k in changes if k != "password") + (", heslo" if changes.get("password") else "")
     add_audit(db, request, "nvr_updated", f"Upraveno zařízení {nvr.name}: {changed_names}", user=ctx.user)
     await db.commit()
@@ -266,8 +274,97 @@ async def delete_nvr(
     add_audit(db, request, "nvr_deleted", f"Smazáno zařízení {name}", user=ctx.user)
     await db.commit()
     monitor.forget_nvr(nvr_id)
+    video.forget(nvr_id)
     await go2rtc.delete_streams_with_prefix(f"nvr{nvr_id}_")
     return {"ok": True}
+
+
+class VideoTestIn(BaseModel):
+    camera_id: int | None = None
+
+
+@router.post("/{nvr_id}/video-test")
+async def video_test(
+    nvr_id: int,
+    body: VideoTestIn,
+    request: Request,
+    ctx: AuthContext = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Zkusí se přihlásit k RTSP videu a poradí, jak video zprovoznit."""
+    key = f"{ctx.user.id}:{client_ip(request)}"
+    if test_connection_limiter.blocked(key):
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Příliš mnoho testů připojení, zkuste to za chvíli.")
+    test_connection_limiter.hit(key)
+    nvr = await _get_nvr(db, nvr_id)
+    cams = await _cameras(db, nvr_id)
+    cam = next((c for c in cams if c.id == body.camera_id), None) if body.camera_id else None
+    cam = cam or next((c for c in cams if c.online), None) or (cams[0] if cams else None)
+    if cam is None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Zařízení zatím nehlásí žádné kamery.")
+    try:
+        conn = connection_for(nvr)
+    except RuntimeError as exc:
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Heslo zařízení nelze dešifrovat.") from exc
+    path = live_rtsp_path(cam.channel, "sub")
+    result = await probe(conn, path)
+    video.remember(nvr.id, conn, result)
+
+    via_ffmpeg = nvr.stream_mode == "compat" or (nvr.stream_mode == "auto" and video.needs_ffmpeg(result))
+    advice: list[str] = []
+    ok = False
+    if not result.reachable:
+        advice.append(f"RTSP port {nvr.rtsp_port} není dosažitelný. Zkontrolujte port RTSP v nastavení zařízení a v Elenvaru.")
+    elif not result.compat_ok:
+        if result.compat_status == 401:
+            advice.append(
+                "Zařízení odmítá přihlášení k videu. Ověřte, že má účet na NVR oprávnění pro vzdálené živé "
+                "zobrazení a přehrávání, a že port RTSP patří tomuto zařízení."
+            )
+        elif result.compat_status == 404:
+            advice.append(f"Stream {path} na zařízení neexistuje.")
+        else:
+            advice.append(f"Zařízení na RTSP neodpovídá správně (kód {result.compat_status}).")
+    else:
+        ok = True
+        if not result.direct_ok:
+            if nvr.stream_mode == "direct":
+                ok = False
+                advice.append(
+                    "Firmware zařízení používá přihlášení, které přímé spojení nezvládá. "
+                    "Přepněte připojení videa na „Automaticky“ nebo „Kompatibilní“."
+                )
+            else:
+                advice.append("Firmware zařízení používá starší způsob přihlášení. Video se čte přes FFmpeg (kompatibilní režim).")
+        codec = result.video_codec
+        if codec and not nvr.transcode:
+            if codec in ("H265", "HEVC"):
+                advice.append(
+                    "Kamera posílá H.265. Pokud ho prohlížeč neumí přehrát, nastavte stream kamery na H.264 "
+                    "nebo zapněte převod na H.264."
+                )
+            elif codec != "H264":
+                ok = False
+                advice.append(
+                    f"Kamera posílá kodek {codec}, který prohlížeč neumí. Nastavte stream kamery na H.264 "
+                    "nebo zapněte převod na H.264."
+                )
+        if ok and len(advice) == 0:
+            advice.append("Přihlášení k videu funguje.")
+    add_audit(db, request, "video_test", f"Test videa {nvr.name}", user=ctx.user)
+    await db.commit()
+    return {
+        "ok": ok,
+        "camera": cam.display_name,
+        "reachable": result.reachable,
+        "auth_offered": result.auth_offered,
+        "direct_ok": result.direct_ok,
+        "compat_ok": result.compat_ok,
+        "via": "transcode" if nvr.transcode else "ffmpeg" if via_ffmpeg else "direct",
+        "video_codec": result.video_codec,
+        "audio_codec": result.audio_codec,
+        "advice": [tr(a) for a in advice],
+    }
 
 
 @router.post("/{nvr_id}/poll")

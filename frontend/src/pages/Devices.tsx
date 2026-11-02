@@ -2,10 +2,10 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Clock, HardDrive, Plug, Plus, Server, Video } from "lucide-react";
 import { useAuth } from "../auth";
-import { Alert, EmptyState, Modal, NvrStatusPill, PageHeader, PageLoader, Spinner, Switch, usePolling, useToast } from "../components/ui";
+import { Alert, EmptyState, Modal, NvrStatusPill, PageHeader, PageLoader, Segmented, Spinner, Switch, usePolling, useToast } from "../components/ui";
 import { api, errorMessage } from "../lib/api";
 import { formatRelative, hasRole } from "../lib/format";
-import type { Nvr } from "../types";
+import type { Nvr, StreamMode } from "../types";
 import { t } from "../lib/i18n";
 
 interface FormState {
@@ -19,6 +19,7 @@ interface FormState {
   password: string;
   enabled: boolean;
   transcode: boolean;
+  stream_mode: StreamMode;
   notes: string;
 }
 
@@ -33,6 +34,7 @@ const EMPTY: FormState = {
   password: "",
   enabled: true,
   transcode: false,
+  stream_mode: "auto",
   notes: "",
 };
 
@@ -58,6 +60,7 @@ export function NvrFormModal({ nvr, onClose, onSaved }: { nvr?: Nvr; onClose: ()
           password: "",
           enabled: nvr.enabled,
           transcode: nvr.transcode,
+          stream_mode: nvr.stream_mode ?? "auto",
           notes: nvr.notes ?? "",
         }
       : EMPTY,
@@ -173,6 +176,27 @@ export function NvrFormModal({ nvr, onClose, onSaved }: { nvr?: Nvr; onClose: ()
           )}
           <Switch checked={form.enabled} onChange={(v) => set("enabled", v)} label={t("Monitorovat zařízení")} description={t("Pravidelně kontrolovat stav zařízení a kamer.")} />
           <Switch checked={form.transcode} onChange={(v) => set("transcode", v)} label={t("Převádět video na H.264")} description={t("Pro kamery s H.265, které prohlížeč neumí přehrát. Zatěžuje server.")} />
+        </div>
+        <div className="field span-2">
+          <span className="field-label">{t("Připojení k videu")}</span>
+          <Segmented<StreamMode>
+            full
+            label={t("Připojení k videu")}
+            value={form.stream_mode}
+            onChange={(v) => set("stream_mode", v)}
+            options={[
+              { value: "auto", label: t("Automaticky") },
+              { value: "direct", label: t("Přímo") },
+              { value: "compat", label: t("Kompatibilní") },
+            ]}
+          />
+          <div className="field-hint">
+            {form.stream_mode === "auto"
+              ? t("Elenvar sám pozná starší firmware, u kterého přímé spojení selže, a použije kompatibilní režim.")
+              : form.stream_mode === "direct"
+                ? t("Nejnižší zpoždění a zátěž. Vhodné pro novější zařízení.")
+                : t("Video se čte přes FFmpeg. Pro starší NVR, u kterých živý obraz hlásí chybné přihlášení, i když náhledy fungují.")}
+          </div>
         </div>
         <div className="field span-2">
           <label htmlFor="nvr-notes">{t("Poznámka")}</label>

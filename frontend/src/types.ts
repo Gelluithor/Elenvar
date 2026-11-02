@@ -56,6 +56,7 @@ export interface Nvr {
   disks: Disk[];
   disk_problems: string[];
   transcode: boolean;
+  stream_mode: StreamMode;
   host?: string;
   http_port?: number;
   rtsp_port?: number;
@@ -67,6 +68,10 @@ export interface Nvr {
   cameras?: Camera[];
 }
 
+export type StreamMode = "auto" | "direct" | "compat";
+
+export type Rotation = 0 | 90 | 180 | 270;
+
 export type CameraState = "online" | "offline" | "unknown" | "nvr_down";
 
 export interface Camera {
@@ -74,7 +79,11 @@ export interface Camera {
   nvr_id: number;
   nvr_name: string;
   channel: number;
+  /** Zobrazovaný název: vlastní název, jinak název ze zařízení. */
   name: string;
+  device_name: string;
+  custom_name: string;
+  rotation: Rotation;
   ip_address: string;
   online: boolean | null;
   state: CameraState;
@@ -181,6 +190,19 @@ export interface SessionInfo {
   ip: string;
   user_agent: string;
   current: boolean;
+}
+
+export interface VideoTest {
+  ok: boolean;
+  camera: string;
+  reachable: boolean;
+  auth_offered: string[];
+  direct_ok: boolean;
+  compat_ok: boolean;
+  via: "direct" | "ffmpeg" | "transcode";
+  video_codec: string;
+  audio_codec: string;
+  advice: string[];
 }
 
 export interface StreamSettings {

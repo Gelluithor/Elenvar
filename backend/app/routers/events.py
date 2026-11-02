@@ -154,7 +154,7 @@ async def dashboard(_: AuthContext = Depends(require_viewer), db: AsyncSession =
                     "kind": "camera",
                     "nvr_id": nvr.id,
                     "camera_id": cam.id,
-                    "title": f"{cam.name} ({nvr.name})",
+                    "title": f"{cam.display_name} ({nvr.name})",
                     "message": "Kamera je offline" + (f" – {cam.detail}" if cam.detail else ""),
                     "since": cam.status_changed_at,
                 }

@@ -8,18 +8,18 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, status
 from fastapi.responses import Response
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .. import go2rtc
+from .. import go2rtc, video
 from ..audit import add_audit
 from ..db import SessionLocal, get_db
-from ..deps import AuthContext, require_admin, require_viewer, ws_authenticate
+from ..deps import AuthContext, has_role, require_operator, require_viewer, ws_authenticate
 from ..hikvision import IsapiError, live_rtsp_path
 from ..i18n import tr
 from ..models import Camera, Nvr
-from ..nvr_service import client_for, connection_for
+from ..nvr_service import client_for
 from ..streaming import proxy_stream
 from ..views import camera_view
 
@@ -32,7 +32,10 @@ _nvr_snapshot_limits: dict[int, asyncio.Semaphore] = {}
 
 
 class CameraUpdate(BaseModel):
-    monitored: bool
+    monitored: bool | None = None
+    # prázdný řetězec vrátí název ze zařízení
+    custom_name: str | None = Field(default=None, max_length=128)
+    rotation: Literal[0, 90, 180, 270] | None = None
 
 
 async def _camera_with_nvr(db: AsyncSession, camera_id: int) -> tuple[Camera, Nvr]:
@@ -57,14 +60,30 @@ async def update_camera(
     camera_id: int,
     body: CameraUpdate,
     request: Request,
-    ctx: AuthContext = Depends(require_admin),
+    ctx: AuthContext = Depends(require_operator),
     db: AsyncSession = Depends(get_db),
 ):
+    """Otočení obrazu smí měnit operátor, název a sledování jen administrátor."""
     cam, nvr = await _camera_with_nvr(db, camera_id)
-    if cam.monitored != body.monitored:
+    if (body.monitored is not None or body.custom_name is not None) and not has_role(ctx.user, "admin"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "K této akci nemáte oprávnění.")
+    label = f"{nvr.name} / {cam.display_name}"
+    changes: list[str] = []
+    if body.monitored is not None and cam.monitored != body.monitored:
         cam.monitored = body.monitored
-        state = "zapnut" if body.monitored else "vypnut"
-        add_audit(db, request, "camera_monitoring", f"{nvr.name} / {cam.name}: monitoring {state}", user=ctx.user)
+        changes.append("monitoring " + ("zapnut" if body.monitored else "vypnut"))
+    if body.custom_name is not None:
+        custom = " ".join(body.custom_name.split())
+        if custom == cam.name:
+            custom = ""
+        if custom != cam.custom_name:
+            cam.custom_name = custom
+            changes.append(f"název „{cam.display_name}“")
+    if body.rotation is not None and cam.rotation != body.rotation:
+        cam.rotation = body.rotation
+        changes.append(f"otočení {body.rotation}°")
+    if changes:
+        add_audit(db, request, "camera_updated", f"{label}: {', '.join(changes)}", user=ctx.user)
         await db.commit()
     return camera_view(cam, nvr)
 
@@ -95,13 +114,6 @@ def live_stream_name(nvr_id: int, channel: int, quality: str) -> str:
     return f"nvr{nvr_id}_ch{channel}_{quality}"
 
 
-def live_source(nvr: Nvr, channel: int, quality: str) -> str:
-    url = connection_for(nvr).rtsp_url(live_rtsp_path(channel, quality))
-    if nvr.transcode:
-        return f"ffmpeg:{url}#video=h264"
-    return f"{url}#backchannel=0"
-
-
 @router.websocket("/{camera_id}/live")
 async def live(websocket: WebSocket, camera_id: int, quality: Literal["main", "sub"] = "sub"):
     ctx = await ws_authenticate(websocket, "viewer")
@@ -115,7 +127,7 @@ async def live(websocket: WebSocket, camera_id: int, quality: Literal["main", "s
             await websocket.close(code=4404)
             return
         try:
-            source = live_source(nvr, cam.channel, quality)
+            source = await video.source_for(nvr, live_rtsp_path(cam.channel, quality))
         except RuntimeError:
             await websocket.close(code=1011)
             return

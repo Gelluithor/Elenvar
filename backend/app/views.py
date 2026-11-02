@@ -26,7 +26,10 @@ def camera_view(cam: Camera, nvr: Nvr) -> dict[str, Any]:
         "nvr_id": nvr.id,
         "nvr_name": nvr.name,
         "channel": cam.channel,
-        "name": cam.name,
+        "name": cam.display_name,
+        "device_name": cam.name,
+        "custom_name": cam.custom_name,
+        "rotation": cam.rotation,
         "ip_address": cam.ip_address,
         "online": cam.online,
         "state": camera_state(cam, nvr),
@@ -65,6 +68,7 @@ def nvr_view(nvr: Nvr, cameras: list[Camera], admin: bool) -> dict[str, Any]:
         if nvr.last_seen_at
         else [],
         "transcode": nvr.transcode,
+        "stream_mode": nvr.stream_mode,
     }
     if admin:
         data.update(

@@ -81,6 +81,8 @@ class Nvr(Base):
     password_enc: Mapped[str] = mapped_column(Text)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     transcode: Mapped[bool] = mapped_column(Boolean, default=False)
+    # auto | direct | compat – jak go2rtc čte RTSP (compat = přes FFmpeg, pro starší firmware)
+    stream_mode: Mapped[str] = mapped_column(String(16), default="auto")
     notes: Mapped[str] = mapped_column(Text, default="")
 
     # stav z monitoringu: unknown | online | offline | auth_error | error
@@ -118,7 +120,11 @@ class Camera(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     nvr_id: Mapped[int] = mapped_column(ForeignKey("nvrs.id", ondelete="CASCADE"), index=True)
     channel: Mapped[int] = mapped_column(Integer)
+    # název ze zařízení (synchronizuje monitoring) a volitelný vlastní název v Elenvaru
     name: Mapped[str] = mapped_column(String(128), default="")
+    custom_name: Mapped[str] = mapped_column(String(128), default="")
+    # otočení obrazu ve stupních (0, 90, 180, 270), jen pro zobrazení
+    rotation: Mapped[int] = mapped_column(Integer, default=0)
     ip_address: Mapped[str] = mapped_column(String(128), default="")
     online: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     detail: Mapped[str] = mapped_column(String(128), default="")
@@ -128,6 +134,10 @@ class Camera(Base):
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
 
     nvr: Mapped[Nvr] = relationship(back_populates="cameras", lazy="raise")
+
+    @property
+    def display_name(self) -> str:
+        return self.custom_name or self.name
 
 
 class Event(Base):

@@ -110,6 +110,28 @@ CATALOG: dict[str, str] = {
     "{device} / {camera}: monitoring {state}": "{device} / {camera}: monitoring {state}",
     "zapnut": "enabled",
     "vypnut": "disabled",
+    "{device} / {camera}: {changes}": "{device} / {camera}: {changes}",
+    "monitoring {state}": "monitoring {state}",
+    "název „{name}“": "name “{name}”",
+    "otočení {degrees}°": "rotation {degrees}°",
+    "Zařízení zatím nehlásí žádné kamery.": "The device does not report any cameras yet.",
+    "Heslo zařízení nelze dešifrovat.": "The device password cannot be decrypted.",
+    "Test videa {name}": "Video test {name}",
+    "RTSP port {port} není dosažitelný. Zkontrolujte port RTSP v nastavení zařízení a v Elenvaru.":
+        "RTSP port {port} is not reachable. Check the RTSP port in the device settings and in Elenvar.",
+    "Zařízení odmítá přihlášení k videu. Ověřte, že má účet na NVR oprávnění pro vzdálené živé zobrazení a přehrávání, a že port RTSP patří tomuto zařízení.":
+        "The device rejects the video sign-in. Make sure the account on the NVR has remote live view and playback permissions, and that the RTSP port belongs to this device.",
+    "Stream {path} na zařízení neexistuje.": "Stream {path} does not exist on the device.",
+    "Zařízení na RTSP neodpovídá správně (kód {code}).": "The device does not respond correctly over RTSP (code {code}).",
+    "Firmware zařízení používá přihlášení, které přímé spojení nezvládá. Přepněte připojení videa na „Automaticky“ nebo „Kompatibilní“.":
+        "The device firmware uses a sign-in method the direct connection cannot handle. Switch the video connection to “Automatic” or “Compatible”.",
+    "Firmware zařízení používá starší způsob přihlášení. Video se čte přes FFmpeg (kompatibilní režim).":
+        "The device firmware uses an older sign-in method. Video is read through FFmpeg (compatible mode).",
+    "Kamera posílá H.265. Pokud ho prohlížeč neumí přehrát, nastavte stream kamery na H.264 nebo zapněte převod na H.264.":
+        "The camera sends H.265. If your browser cannot play it, set the camera stream to H.264 or turn on conversion to H.264.",
+    "Kamera posílá kodek {codec}, který prohlížeč neumí. Nastavte stream kamery na H.264 nebo zapněte převod na H.264.":
+        "The camera sends the {codec} codec, which browsers cannot play. Set the camera stream to H.264 or turn on conversion to H.264.",
+    "Přihlášení k videu funguje.": "Video sign-in works.",
     "Zařízení není dostupné.": "The device is not available.",
     "Zařízení je vypnuté.": "The device is disabled.",
     # --- záznamy -------------------------------------------------------------

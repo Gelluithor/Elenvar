@@ -33,8 +33,8 @@ export function translateStreamError(raw: string): string {
   if (text.includes("codecs not matched") || text.includes("codecs not match")) {
     return t("Prohlížeč nepodporuje kodek kamery (pravděpodobně H.265). Nastavte stream na H.264 nebo zapněte převod na H.264 u zařízení.");
   }
-  if (text.includes("401") || text.includes("unauthorized")) {
-    return t("Zařízení odmítlo přihlášení k videu (RTSP).");
+  if (text.includes("401") || text.includes("unauthorized") || text.includes("wrong user")) {
+    return t("Zařízení odmítlo přihlášení k videu (RTSP). U starších NVR nastavte připojení k videu na „Automaticky“ nebo „Kompatibilní“ a v detailu zařízení spusťte test videa.");
   }
   if (text.includes("timeout") || text.includes("i/o timeout")) {
     return t("Zařízení neodpovídá (vypršel časový limit).");

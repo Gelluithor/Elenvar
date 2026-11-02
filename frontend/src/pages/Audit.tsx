@@ -32,6 +32,8 @@ const ACTION_LABELS: Record<string, string> = {
   nvr_reboot: N_("Restart zařízení"),
   stream_settings: N_("Nastavení streamu"),
   camera_monitoring: N_("Monitoring kamery"),
+  camera_updated: N_("Úprava kamery"),
+  video_test: N_("Test videa"),
   recording_playback: N_("Přehrání záznamu"),
   recording_download: N_("Stažení záznamu"),
   settings_updated: N_("Změna nastavení"),
